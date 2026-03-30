@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 98%;
+    --foreground: 160 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 30% 10%;
+
+    --primary: 145 55% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 60% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 40 15% 94%;
+    --muted-foreground: 160 10% 45%;
+
+    --accent: 40 70% 55%;
+    --accent-foreground: 160 30% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 145 55% 32%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 145 30% 15%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 40 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 145 25% 22%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 145 20% 25%;
+    --sidebar-ring: 40 60% 50%;
+
+    --success: 145 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 90% 50%;
+    --warning-foreground: 160 30% 10%;
+
+    --font-heading: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  .dark {
+    --background: 160 20% 8%;
+    --foreground: 40 20% 95%;
+    --card: 160 15% 12%;
+    --card-foreground: 40 20% 95%;
+    --popover: 160 15% 12%;
+    --popover-foreground: 40 20% 95%;
+    --primary: 145 55% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 60% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 160 15% 18%;
+    --muted-foreground: 40 10% 60%;
+    --accent: 40 70% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 15% 20%;
+    --input: 160 15% 20%;
+    --ring: 145 55% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer components {
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(145 55% 32% / 0.95), hsl(160 40% 20% / 0.9));
+  }
+
+  .gold-gradient {
+    background: linear-gradient(135deg, hsl(40 70% 55%), hsl(40 90% 50%));
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .badge-featured {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: linear-gradient(135deg, hsl(40 70% 55%), hsl(40 90% 50%));
+    color: hsl(160 30% 10%);
+  }
+
+  /* Rich Text Rendering Styles */
+  .rich-text-content h1 { @apply text-2xl font-bold mt-6 mb-4 text-foreground; }
+  .rich-text-content h2 { @apply text-xl font-bold mt-5 mb-3 text-foreground; }
+  .rich-text-content h3 { @apply text-lg font-bold mt-4 mb-2 text-foreground; }
+  .rich-text-content p { @apply mb-4 leading-relaxed; }
+  .rich-text-content ul { @apply list-disc ml-6 mb-4 space-y-2; }
+  .rich-text-content ol { @apply list-decimal ml-6 mb-4 space-y-2; }
+  .rich-text-content li { @apply pl-1; }
+  .rich-text-content b, .rich-text-content strong { @apply font-bold text-foreground; }
+  .rich-text-content i, .rich-text-content em { @apply italic; }
+  .rich-text-content a { @apply text-primary underline hover:text-primary/80; }
+}
