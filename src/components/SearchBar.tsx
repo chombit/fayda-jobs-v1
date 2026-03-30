@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SearchBar = ({ className = "" }: { className?: string }) => {
   const [query, setQuery] = useState("");
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      navigate(`/jobs?search=${encodeURIComponent(query.trim())}`);
+      router.push(`/jobs?search=${encodeURIComponent(query.trim())}`);
     }
   };
 

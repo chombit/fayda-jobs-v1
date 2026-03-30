@@ -60,6 +60,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
       }),
     ],
     content: value,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },

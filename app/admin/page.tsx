@@ -45,6 +45,7 @@ import {
   ListOrdered,
 } from "lucide-react";
 import { useRef } from "react";
+import RichTextEditor from "@/components/RichTextEditor";
 import {
   fetchJobs,
   fetchCategories,
@@ -163,121 +164,6 @@ function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
           </form>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-// ── Rich Text Toolbar Component ─────────────────────────────────────────────
-
-interface RichTextToolbarProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
-}
-
-function RichTextToolbar({ textareaRef }: RichTextToolbarProps) {
-  const insertTag = (tag: string, endTag?: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selectedText = text.substring(start, end);
-    const actualEndTag = endTag || tag;
-    const replacement = `<${tag}>${selectedText}</${actualEndTag}>`;
-
-    // We need to trigger the React change event by calling the native setter
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLTextAreaElement.prototype,
-      "value"
-    )?.set;
-    
-    if (nativeInputValueSetter) {
-      nativeInputValueSetter.call(
-        textarea,
-        text.substring(0, start) + replacement + text.substring(end)
-      );
-      textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-
-    textarea.focus();
-    // Selection adjustment could be added here
-  };
-
-  return (
-    <div className="flex flex-wrap gap-1 mb-1 p-1 bg-muted/30 rounded-t border border-b-0">
-      <Button 
-        type="button" 
-        size="icon" 
-        variant="ghost" 
-        className="h-8 w-8"
-        onClick={() => insertTag("b")}
-        title="Bold"
-      >
-        <Bold className="h-4 w-4" />
-      </Button>
-      <Button 
-        type="button" 
-        size="icon" 
-        variant="ghost" 
-        className="h-8 w-8"
-        onClick={() => insertTag("i")}
-        title="Italic"
-      >
-        <Italic className="h-4 w-4" />
-      </Button>
-      <Button 
-        type="button" 
-        size="icon" 
-        variant="ghost" 
-        className="h-8 w-8"
-        onClick={() => insertTag("h2")}
-        title="Heading 2"
-      >
-        <Heading2 className="h-4 w-4" />
-      </Button>
-      <Button 
-        type="button" 
-        size="icon" 
-        variant="ghost" 
-        className="h-8 w-8"
-        onClick={() => insertTag("h3")}
-        title="Heading 3"
-      >
-        <Heading3 className="h-4 w-4" />
-      </Button>
-      <Button 
-        type="button" 
-        size="icon" 
-        variant="ghost" 
-        className="h-8 w-8"
-        onClick={() => {
-          const textarea = textareaRef.current;
-          if (!textarea) return;
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          const text = textarea.value;
-          const selectedText = text.substring(start, end);
-          const lines = selectedText.split('\n');
-          const listText = lines.map(line => `  <li>${line || 'Item'}</li>`).join('\n');
-          
-          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-            window.HTMLTextAreaElement.prototype,
-            "value"
-          )?.set;
-          
-          if (nativeInputValueSetter) {
-            nativeInputValueSetter.call(
-              textarea,
-              text.substring(0, start) + `<ul>\n${listText}\n</ul>` + text.substring(end)
-            );
-            textarea.dispatchEvent(new Event("input", { bubbles: true }));
-          }
-          textarea.focus();
-        }}
-        title="Unordered List"
-      >
-        <List className="h-4 w-4" />
-      </Button>
     </div>
   );
 }
@@ -407,10 +293,24 @@ function AdminDashboard({
   const [isBlogDialogOpen, setIsBlogDialogOpen] = useState(false);
   const [editingBlogPost, setEditingBlogPost] = useState<BlogPost | null>(null);
 
-  // Refs for rich text fields
-  const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const requirementsRef = useRef<HTMLTextAreaElement>(null);
-  const responsibilitiesRef = useRef<HTMLTextAreaElement>(null);
+  // State for rich text fields
+  const [description, setDescription] = useState("");
+  const [requirements, setRequirements] = useState("");
+  const [responsibilities, setResponsibilities] = useState("");
+
+  // Populate rich text states when editing
+  useEffect(() => {
+    if (editingJob && isJobDialogOpen) {
+      setDescription(editingJob.description || "");
+      setRequirements(editingJob.requirements || "");
+      setResponsibilities(editingJob.responsibilities || "");
+    } else if (!editingJob && isJobDialogOpen) {
+      // Clear states for new job
+      setDescription("");
+      setRequirements("");
+      setResponsibilities("");
+    }
+  }, [editingJob, isJobDialogOpen]);
 
   // ── Queries ─────────────────────────────────────────────────────────────
 
@@ -449,7 +349,7 @@ function AdminDashboard({
   const { data: blogPosts, isLoading: blogPostsLoading } = useQuery({
     queryKey: ["admin-blog-posts"],
     queryFn: async () => {
-      const { data } = await fetchBlogPosts();
+      const data = await fetchBlogPosts();
       return (data ?? []) as BlogPost[];
     },
   });
@@ -634,24 +534,38 @@ function AdminDashboard({
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     const companyIdRaw = formData.get("company_id") as string;
+    
+    // Get and process form data
     const jobData = {
       title: formData.get("title") as string,
       company_id: companyIdRaw || null,
       location: formData.get("location") as string,
       job_type: formData.get("type") as string,
       category_id: (formData.get("category_id") as string) || null,
-      description: formData.get("description") as string,
-      requirements: formData.get("requirements") as string,
-      responsibilities: formData.get("responsibilities") as string,
+      description: description, // Use state from RichTextEditor
+      requirements: requirements,
+      responsibilities: responsibilities,
       application_link: formData.get("application_link") as string,
       deadline: (formData.get("deadline") as string) || null,
       featured: formData.get("featured") === "on",
     };
 
-    if (editingJob) {
-      updateJobMutation.mutate({ id: editingJob.id, ...jobData });
-    } else {
-      createJobMutation.mutate(jobData);
+    console.log('📊 Processed job data (Rich Text):', {
+      title: jobData.title,
+      descLength: jobData.description.length,
+      reqLength: jobData.requirements?.length,
+      resLength: jobData.responsibilities?.length
+    });
+
+    try {
+      if (editingJob) {
+        updateJobMutation.mutate({ id: editingJob.id, ...jobData });
+      } else {
+        createJobMutation.mutate(jobData);
+      }
+    } catch (err: any) {
+      console.error('Unexpected error in handleJobSubmit:', err);
+      toast.error('An unexpected error occurred. Please check the console.');
     }
   };
 
@@ -962,38 +876,28 @@ function AdminDashboard({
                       </div>
                       <div className="space-y-1">
                         <label className="text-sm font-medium">Description</label>
-                        <RichTextToolbar textareaRef={descriptionRef} />
-                        <textarea
-                          ref={descriptionRef}
-                          name="description"
-                          placeholder="Job Description"
-                          className="w-full p-2 border rounded-b border-t-0 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
-                          defaultValue={editingJob?.description ?? ""}
-                          required
+                        <RichTextEditor 
+                          value={description} 
+                          onChange={setDescription} 
+                          placeholder="Detailed job description..." 
                         />
                       </div>
                       
                       <div className="space-y-1">
                         <label className="text-sm font-medium">Requirements</label>
-                        <RichTextToolbar textareaRef={requirementsRef} />
-                        <textarea
-                          ref={requirementsRef}
-                          name="requirements"
-                          placeholder="Job Requirements"
-                          className="w-full p-2 border rounded-b border-t-0 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
-                          defaultValue={editingJob?.requirements ?? ""}
+                        <RichTextEditor 
+                          value={requirements} 
+                          onChange={setRequirements} 
+                          placeholder="Job requirements and qualifications..." 
                         />
                       </div>
                       
                       <div className="space-y-1">
                         <label className="text-sm font-medium">Responsibilities</label>
-                        <RichTextToolbar textareaRef={responsibilitiesRef} />
-                        <textarea
-                          ref={responsibilitiesRef}
-                          name="responsibilities"
-                          placeholder="Key Responsibilities"
-                          className="w-full p-2 border rounded-b border-t-0 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-primary"
-                          defaultValue={editingJob?.responsibilities ?? ""}
+                        <RichTextEditor 
+                          value={responsibilities} 
+                          onChange={setResponsibilities} 
+                          placeholder="Key responsibilities and daily tasks..." 
                         />
                       </div>
 
@@ -1028,8 +932,18 @@ function AdminDashboard({
                             createJobMutation.isPending ||
                             updateJobMutation.isPending
                           }
+                          className="min-w-[120px]"
                         >
-                          {editingJob ? "Update" : "Create"} Job
+                          {(createJobMutation.isPending || updateJobMutation.isPending) ? (
+                            <>
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                              {editingJob ? "Updating..." : "Creating..."}
+                            </>
+                          ) : (
+                            <>
+                              {editingJob ? "Update" : "Create"} Job
+                            </>
+                          )}
                         </Button>
                       </div>
                     </form>

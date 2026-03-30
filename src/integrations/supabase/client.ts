@@ -33,6 +33,20 @@ export const supabase = createClient<Database>(
       persistSession: isBrowser,
       autoRefreshToken: isBrowser,
     },
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: {
+        'Connection': 'keep-alive',
+      },
+    },
+    // Increase timeout settings
+    realtime: {
+      params: {
+        timeout: 120000, // 2 minutes
+      },
+    },
   }
 );
 

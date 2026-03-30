@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML Stripping Performance Test</title>
+</head>
+<body>
+    <h1>HTML Stripping Performance Test</h1>
+    <button onclick="testPerformance()">Run Test</button>
+    <div id="results"></div>
+
+    <script>
+        function stripHtmlRegex(html) {
+            return html
+                .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                .replace(/<style[^>]*>.*?<\/style>/gi, '')
+                .replace(/<[^>]*>/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function stripHtmlDOM(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+
+        function testPerformance() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Testing...</h2>';
+
+            // Generate test HTML with lots of bullets
+            let testHtml = '';
+            for (let i = 0; i < 1000; i++) {
+                testHtml += `<ul>`;
+                for (let j = 0; j < 10; j++) {
+                    testHtml += `<li>Bullet point ${i}-${j} with some extra text to make it longer</li>`;
+                }
+                testHtml += `</ul>`;
+            }
+
+            console.log(`Test HTML length: ${testHtml.length} characters`);
+
+            // Test regex method
+            const regexStart = performance.now();
+            const regexResult = stripHtmlRegex(testHtml);
+            const regexTime = performance.now() - regexStart;
+
+            // Test DOM method
+            const domStart = performance.now();
+            const domResult = stripHtmlDOM(testHtml);
+            const domTime = performance.now() - domStart;
+
+            results.innerHTML = `
+                <h2>Results:</h2>
+                <p><strong>Test HTML length:</strong> ${testHtml.length} characters</p>
+                <p><strong>Regex method:</strong> ${regexTime.toFixed(2)}ms</p>
+                <p><strong>DOM method:</strong> ${domTime.toFixed(2)}ms</p>
+                <p><strong>Regex result length:</strong> ${regexResult.length} characters</p>
+                <p><strong>DOM result length:</strong> ${domResult.length} characters</p>
+                <p><strong>Results match:</strong> ${regexResult === domResult ? 'Yes' : 'No'}</p>
+                <h3>Sample result:</h3>
+                <pre>${regexResult.substring(0, 500)}...</pre>
+            `;
+        }
+    </script>
+</body>
+</html>
