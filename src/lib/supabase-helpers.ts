@@ -186,6 +186,12 @@ export async function createJob(
     
     // Post to Telegram channel after successful database insertion
     console.log('📤 Posting job to Telegram channel...');
+    console.log('🔍 Telegram environment check:', {
+      hasToken: !!process.env.TELEGRAM_BOT_TOKEN,
+      hasChannel: !!process.env.TELEGRAM_CHANNEL_ID,
+      tokenLength: process.env.TELEGRAM_BOT_TOKEN?.length,
+      channel: process.env.TELEGRAM_CHANNEL_ID
+    });
     const telegramStart = performance.now();
     
     // Get company and category names for Telegram post

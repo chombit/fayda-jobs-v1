@@ -20,6 +20,15 @@ const TELEGRAM_CONFIG: TelegramConfig = {
   channelId: process.env.TELEGRAM_CHANNEL_ID || '@faydajobs'
 };
 
+// Debug environment variables
+console.log('🔍 Telegram Bot Config:', {
+  hasBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
+  hasChannelId: !!process.env.TELEGRAM_CHANNEL_ID,
+  botTokenLength: process.env.TELEGRAM_BOT_TOKEN?.length,
+  channelId: process.env.TELEGRAM_CHANNEL_ID,
+  nodeEnv: process.env.NODE_ENV
+});
+
 // Format job posting for Telegram with limited info to drive traffic
 function formatJobPostForTelegram(job: TelegramJobPost): string {
   const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
@@ -50,12 +59,26 @@ function formatJobPostForTelegram(job: TelegramJobPost): string {
 // Send job posting to Telegram channel
 export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> {
   try {
+    console.log('🚀 Starting Telegram post for job:', job.title);
+    
     if (!TELEGRAM_CONFIG.botToken || !TELEGRAM_CONFIG.channelId) {
       console.warn('⚠️ Telegram bot not configured - missing bot token or channel ID');
+      console.log('Available env vars:', {
+        TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ? 'SET' : 'MISSING',
+        TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID ? 'SET' : 'MISSING'
+      });
       return false;
     }
 
     const message = formatJobPostForTelegram(job);
+    const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
+    
+    console.log('📤 Posting to Telegram:', {
+      title: job.title,
+      slug: job.slug,
+      channel: TELEGRAM_CONFIG.channelId,
+      url: jobUrl
+    });
     
     const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
     
@@ -69,7 +92,7 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
           [
             {
               text: "🚀 Apply Now",
-              url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`
+              url: jobUrl
             },
             {
               text: "📱 More Jobs",
@@ -80,8 +103,8 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
       }
     };
 
-    console.log('📤 Posting job to Telegram:', { title: job.title, slug: job.slug });
-    
+    console.log('� Sending Telegram payload:', JSON.stringify(payload, null, 2));
+
     const response = await fetch(telegramApiUrl, {
       method: 'POST',
       headers: {
@@ -92,11 +115,14 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
 
     const result = await response.json();
     
+    console.log('📊 Telegram API response:', result);
+    
     if (result.ok) {
       console.log('✅ Job successfully posted to Telegram:', result.result.message_id);
       return true;
     } else {
       console.error('❌ Failed to post job to Telegram:', result.description);
+      console.error('Full error response:', result);
       return false;
     }
   } catch (error) {
