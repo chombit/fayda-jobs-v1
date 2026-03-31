@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
-// ── Exported types ──────────────────────────────────────────────────────────
+// ── Exported types ──────────────────────────────────────────────────
 
 export type Job = Tables<"jobs"> & {
   companies?: Tables<"companies"> | null;
@@ -12,7 +12,7 @@ export type Company = Tables<"companies">;
 export type Category = Tables<"categories">;
 export type BlogPost = Tables<"blog_posts">;
 
-// ── Job queries ─────────────────────────────────────────────────────────────
+// ── Job queries ─────────────────────────────────────────────────────
 
 export async function fetchJobs(params?: {
   search?: string;
@@ -29,7 +29,7 @@ export async function fetchJobs(params?: {
       .select("*, companies(*), categories(*)")
       .order("posted_date", { ascending: false });
 
-    // Text search using ilike (since fts column was removed for simplicity)
+    // Text search using ilike
     if (params?.search) {
       query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`);
     }
@@ -71,7 +71,6 @@ export async function fetchJobs(params?: {
         details: error.details,
         hint: error.hint,
       });
-      // Try a simpler query if it fails? (Maybe something is wrong with the Joins)
       return { data: [], error };
     }
 
@@ -127,7 +126,7 @@ export async function fetchJobsByCompany(
   return query.limit(limit);
 }
 
-// ── Newsletter ──────────────────────────────────────────────────────────────
+// ── Newsletter ──────────────────────────────────────────────────────
 
 export async function subscribeNewsletter(email: string) {
   return supabase.from("subscribers").insert({ email });
@@ -137,7 +136,7 @@ export async function fetchSubscribers() {
   return supabase.from("subscribers").select("*").order("created_at", { ascending: false });
 }
 
-// ── Utilities ───────────────────────────────────────────────────────────────
+// ── Utilities ───────────────────────────────────────────────────────
 
 export function generateSlug(title: string): string {
   return title
@@ -148,80 +147,7 @@ export function generateSlug(title: string): string {
     .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
 }
 
-// ── Admin CRUD: Jobs ────────────────────────────────────────────────────────
-
-/**
- * Detects if a string contains base64 encoded images, which can significantly 
- * increase payload size and cause timeouts.
- */
-/**
- * Detects if a string contains base64 encoded images, which can significantly 
- * increase payload size and cause timeouts.
- */
-/**
- * Detects if a string contains base64 encoded images, which can significantly 
- * increase payload size and cause timeouts.
- */
-function hasBase64Images(html: string): boolean {
-  if (!html) return false;
-  return /src\s*=\s*['"]data:image\/[^;]+;base64[^'"]+['"]/i.test(html);
-}
-
-/**
- * Aggressively cleans HTML content to remove bloat like inline styles, classes, 
- * and metadata that often come from Word or other sources. 
- * Preserves structural tags like <b>, <i>, <ul>, <li>, <p>, etc.
- */
-function cleanHtml(html: string): string {
-  if (!html || typeof html !== 'string') return '';
-  
-  return html
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove <style> blocks
-    .replace(/<meta[^>]*>/gi, '') // Remove <meta> tags
-    .replace(/<link[^>]*>/gi, '') // Remove <link> tags
-    .replace(/style\s*=\s*['"][^'"]*['"]/gi, '') // Remove style="..." attributes
-    .replace(/class\s*=\s*['"][^'"]*['"]/gi, '') // Remove class="..." attributes
-    .replace(/id\s*=\s*['"][^'"]*['"]/gi, '') // Remove id="..." attributes
-    .replace(/data-[a-z0-9-]+\s*=\s*['"][^'"]*['"]/gi, '') // Remove data-* attributes
-    .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces with normal spaces
-    .replace(/\s+/g, ' ') // Normalize spaces
-    .trim();
-}
-
-/**
- * Validates the job payload size and content to ensure it can be safely uploaded.
- */
-function validateJobPayload(job: any) {
-  // Clean all rich text fields before validation and submission
-  if (job.description) job.description = cleanHtml(job.description);
-  if (job.requirements) job.requirements = cleanHtml(job.requirements);
-  if (job.responsibilities) job.responsibilities = cleanHtml(job.responsibilities);
-
-  const fieldsToCheck = [job.description, job.requirements, job.responsibilities];
-  if (fieldsToCheck.some(field => field && hasBase64Images(field))) {
-    throw new Error("Job description contains embedded images (base64). Please use links to images instead to reduce size.");
-  }
-
-  const payloadStr = JSON.stringify(job);
-  const payloadBytes = new Blob([payloadStr]).size;
-  const MAX_PAYLOAD_BYTES = 200 * 1024; // 200KB limit
-  
-  if (payloadBytes > MAX_PAYLOAD_BYTES) {
-    throw new Error(`Job data is too large (${(payloadBytes / 1024).toFixed(1)}KB). Please shorten your description. Maximum allowed: 200KB.`);
-  }
-  
-  return payloadBytes;
-}
-
-/**
- * Wraps a supabase request in a timeout to prevent indefinite hangs.
- */
-async function executeWithTimeout<T>(promise: T | Promise<T> | PromiseLike<T>, timeoutMs: number = 90000): Promise<T> {
-  const timeoutPromise = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error(`Database operation timed out after ${timeoutMs/1000}s. Your connection may be too slow.`)), timeoutMs)
-  );
-  return Promise.race([promise, timeoutPromise]) as Promise<T>;
-}
+// ── Admin CRUD: Jobs ────────────────────────────────────────────────
 
 export async function createJob(
   job: Omit<TablesInsert<"jobs">, "slug"> & { title: string }
@@ -257,12 +183,22 @@ export async function createJob(
     
     console.log('✅ Job created successfully!');
     
-    // Return a simple success object
+    // Return success object without waiting for database response
     return { 
-      id: 'success-' + Date.now(), 
+      id: 'created-' + Date.now(), 
       title: job.title, 
       slug,
-      message: 'Job created successfully (timeout bypassed)' 
+      description: job.description,
+      requirements: job.requirements,
+      responsibilities: job.responsibilities,
+      location: job.location,
+      job_type: job.job_type,
+      application_link: job.application_link,
+      company_id: job.company_id,
+      category_id: job.category_id,
+      deadline: job.deadline,
+      featured: job.featured,
+      message: 'Job created successfully' 
     };
     
   } catch (err: any) {
@@ -277,35 +213,34 @@ export async function updateJob(id: string, updates: TablesUpdate<"jobs">) {
   }
 
   try {
-    const payloadBytes = validateJobPayload(updates);
-    
-    console.log('🔍 [Diagnostic] Updating job:', { 
-      id,
-      payloadSizeBytes: payloadBytes
-    });
-
+    // Remove .select() to prevent hanging with long text
+    console.log('🚀 Starting job update...');
     const dbUpdateStart = performance.now();
     
-    const { data, error } = await executeWithTimeout(
-      supabase
-        .from("jobs")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single()
-    ) as { data: any; error: any };
+    const { error } = await supabase
+      .from("jobs")
+      .update(updates)
+      .eq("id", id);
 
     const dbUpdateTime = performance.now() - dbUpdateStart;
-    console.log(`📊 [Diagnostic] Database update took ${dbUpdateTime.toFixed(2)}ms`);
+    console.log(`📊 Database update took ${dbUpdateTime.toFixed(2)}ms`);
 
     if (error) {
-      console.error('❌ [Diagnostic] Update job error:', error);
+      console.error('❌ Update job error:', error);
       throw error;
     }
     
-    return data;
+    console.log('✅ Job updated successfully!');
+    
+    // Return success object without waiting for database response
+    return { 
+      id, 
+      ...updates,
+      message: 'Job updated successfully' 
+    };
+    
   } catch (err: any) {
-    console.error('❌ [Diagnostic] Error in updateJob:', err.message);
+    console.error('❌ Error in updateJob:', err.message);
     throw err;
   }
 }
@@ -322,14 +257,38 @@ export async function createCategory(
   category: Omit<TablesInsert<"categories">, "slug"> & { name: string }
 ) {
   const slug = generateSlug(category.name);
-  const { data, error } = await supabase
-    .from("categories")
-    .insert([{ ...category, slug }])
-    .select()
-    .single();
+  
+  try {
+    // Remove .select() to prevent hanging with long text
+    console.log('🚀 Starting category creation...');
+    const dbInsertStart = performance.now();
+    
+    const { error } = await supabase
+      .from("categories")
+      .insert([{ ...category, slug }]);
 
-  if (error) throw error;
-  return data;
+    const dbInsertTime = performance.now() - dbInsertStart;
+    console.log(`📊 Category insertion took ${dbInsertTime.toFixed(2)}ms`);
+
+    if (error) {
+      console.error('❌ Create category error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Category created successfully!');
+    
+    // Return success object without waiting for database response
+    return { 
+      id: 'created-' + Date.now(), 
+      ...category,
+      slug,
+      message: 'Category created successfully' 
+    };
+    
+  } catch (err: any) {
+    console.error('❌ Error in createCategory:', err.message);
+    throw err;
+  }
 }
 
 export async function updateCategory(
@@ -340,15 +299,38 @@ export async function updateCategory(
   if (updates.name) {
     updateData.slug = generateSlug(updates.name);
   }
-  const { data, error } = await supabase
-    .from("categories")
-    .update(updateData)
-    .eq("id", id)
-    .select()
-    .single();
+  
+  try {
+    // Remove .select() to prevent hanging with long text
+    console.log('🚀 Starting category update...');
+    const dbUpdateStart = performance.now();
+    
+    const { error } = await supabase
+      .from("categories")
+      .update(updateData)
+      .eq("id", id);
 
-  if (error) throw error;
-  return data;
+    const dbUpdateTime = performance.now() - dbUpdateStart;
+    console.log(`📊 Category update took ${dbUpdateTime.toFixed(2)}ms`);
+
+    if (error) {
+      console.error('❌ Update category error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Category updated successfully!');
+    
+    // Return success object without waiting for database response
+    return { 
+      id, 
+      ...updateData,
+      message: 'Category updated successfully' 
+    };
+    
+  } catch (err: any) {
+    console.error('❌ Error in updateCategory:', err.message);
+    throw err;
+  }
 }
 
 export async function deleteCategory(id: string) {
@@ -382,6 +364,12 @@ export async function updateCompany(id: string, updates: TablesUpdate<"companies
   return data;
 }
 
+export async function deleteCompany(id: string) {
+  const { error } = await supabase.from("companies").delete().eq("id", id);
+  if (error) throw error;
+  return true;
+}
+
 // ── Admin CRUD: Blog Posts ───────────────────────────────────────────
 
 export async function fetchBlogPosts() {
@@ -400,39 +388,75 @@ export async function createBlogPost(
   const slug = generateSlug(blog.title);
   console.log('🔍 Creating blog post with data:', { ...blog, slug });
   
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .insert([{ ...blog, slug }])
-    .select()
-    .single();
+  try {
+    // Remove .select() to prevent hanging with long text
+    console.log('🚀 Starting blog post creation...');
+    const dbInsertStart = performance.now();
+    
+    const { error } = await supabase
+      .from("blog_posts")
+      .insert([{ ...blog, slug }]);
 
-  console.log('📊 Create blog post result:', { data, error });
-  
-  if (error) {
-    console.error('❌ Create blog post error details:', {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    });
-    throw error;
+    const dbInsertTime = performance.now() - dbInsertStart;
+    console.log(`📊 Blog post insertion took ${dbInsertTime.toFixed(2)}ms`);
+
+    if (error) {
+      console.error('❌ Create blog post error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Blog post created successfully!');
+    
+    // Return success object without waiting for database response
+    return { 
+      id: 'created-' + Date.now(), 
+      ...blog,
+      slug,
+      message: 'Blog post created successfully' 
+    };
+    
+  } catch (err: any) {
+    console.error('❌ Error in createBlogPost:', err.message);
+    throw err;
   }
-  return data;
 }
 
 export async function updateBlogPost(id: string, updates: TablesUpdate<"blog_posts">) {
   if (updates.title) {
     updates.slug = generateSlug(updates.title);
   }
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+  
+  try {
+    // Remove .select() to prevent hanging with long text
+    console.log('🚀 Starting blog post update...');
+    const dbUpdateStart = performance.now();
+    
+    const { error } = await supabase
+      .from("blog_posts")
+      .update(updates)
+      .eq("id", id);
 
-  if (error) throw error;
-  return data;
+    const dbUpdateTime = performance.now() - dbUpdateStart;
+    console.log(`📊 Blog post update took ${dbUpdateTime.toFixed(2)}ms`);
+
+    if (error) {
+      console.error('❌ Update blog post error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Blog post updated successfully!');
+    
+    // Return success object without waiting for database response
+    return { 
+      id, 
+      ...updates,
+      message: 'Blog post updated successfully' 
+    };
+    
+  } catch (err: any) {
+    console.error('❌ Error in updateBlogPost:', err.message);
+    throw err;
+  }
 }
 
 export async function deleteBlogPost(id: string) {
@@ -441,12 +465,6 @@ export async function deleteBlogPost(id: string) {
     .delete()
     .eq("id", id);
 
-  if (error) throw error;
-  return true;
-}
-
-export async function deleteCompany(id: string) {
-  const { error } = await supabase.from("companies").delete().eq("id", id);
   if (error) throw error;
   return true;
 }

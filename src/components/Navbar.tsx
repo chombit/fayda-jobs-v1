@@ -1,10 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-// import logo from "/faydajobs-logo.png";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,11 +45,16 @@ const Navbar = () => {
         <div className="container flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            {/* <img
-              src={logo.src}
-              alt="FaydaJobs"
-              className="h-9 w-9 rounded-xl object-contain transition-transform duration-300 group-hover:scale-105"
-            /> */}
+            <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-primary/5 p-0.5 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary/10">
+              <Image
+                src="/faydajobs-logo.png"
+                alt="FaydaJobs"
+                width={72}
+                height={72}
+                className="h-full w-full object-contain"
+                priority
+              />
+            </div>
             <span className="text-xl font-bold font-heading text-foreground tracking-tight">
               Fayda<span className="text-primary">Jobs</span>
             </span>

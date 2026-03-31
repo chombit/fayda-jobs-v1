@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
+  icons: {
+    icon: '/faydajobs-logo.png',
+    shortcut: '/faydajobs-logo.png',
+    apple: '/faydajobs-logo.png',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_ET',
@@ -27,7 +32,7 @@ export const metadata: Metadata = {
     siteName: 'Fayda Jobs',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/faydajobs-logo.png',
         width: 1200,
         height: 630,
         alt: 'Fayda Jobs - Ethiopian Job Portal',
@@ -38,7 +43,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Fayda Jobs - Find Your Career Opportunity in Ethiopia',
     description: 'Discover thousands of verified jobs from top companies, NGOs, and government institutions across Ethiopia.',
-    images: ['/og-image.jpg'],
+    images: ['/faydajobs-logo.png'],
   },
   robots: {
     index: true,

@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { Mail, Facebook, Twitter, Linkedin, Instagram, Youtube } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,15 +35,72 @@ const Footer = () => {
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-sm font-bold text-primary-foreground">F</span>
+            <Link href="/" className="flex items-center gap-2.5 mb-4 group">
+              <div className="relative h-8 w-8 overflow-hidden rounded-lg bg-white p-0.5 transition-transform duration-300 group-hover:scale-105">
+                <Image
+                  src="/faydajobs-logo.png"
+                  alt="FaydaJobs"
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-contain"
+                />
               </div>
-              <span className="text-lg font-bold font-heading">FaydaJobs</span>
+              <span className="text-xl font-bold font-heading text-background tracking-tight">
+                Fayda<span className="text-primary">Jobs</span>
+              </span>
             </Link>
-            <p className="text-sm opacity-70">
+            <p className="text-sm opacity-70 mb-4">
               Ethiopia's premier job discovery platform. Find your next career opportunity.
             </p>
+            
+            {/* Social Media Icons - Always Visible */}
+            <div className="flex items-center gap-3">
+              <a 
+                href="https://facebook.com/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300 hover:scale-110"
+                aria-label="Facebook"
+              >
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://twitter.com/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300 hover:scale-110"
+                aria-label="Twitter"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://linkedin.com/company/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300 hover:scale-110"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://instagram.com/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300 hover:scale-110"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://youtube.com/@faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300 hover:scale-110"
+                aria-label="YouTube"
+              >
+                <Youtube className="h-5 w-5" />
+              </a>
+            </div>
           </div>
 
           <div>
@@ -84,8 +142,62 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-background/10 mt-8 pt-6 text-center text-sm opacity-50">
-          © {new Date().getFullYear()} Fayda Jobs. All rights reserved.
+        <div className="border-t border-background/10 mt-8 pt-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-sm opacity-50">
+              © {new Date().getFullYear()} Fayda Jobs. All rights reserved.
+            </div>
+            
+            {/* Mobile Social Media Section */}
+            <div className="flex items-center gap-3 md:hidden">
+              <span className="text-xs opacity-70">Follow us:</span>
+              <a 
+                href="https://facebook.com/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="Facebook"
+              >
+                <Facebook className="h-4 w-4" />
+              </a>
+              <a 
+                href="https://twitter.com/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="Twitter"
+              >
+                <Twitter className="h-4 w-4" />
+              </a>
+              <a 
+                href="https://linkedin.com/company/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="h-4 w-4" />
+              </a>
+              <a 
+                href="https://instagram.com/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-4 w-4" />
+              </a>
+              <a 
+                href="https://youtube.com/@faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-background/10 border border-background/20 text-background hover:bg-primary hover:text-white transition-all duration-300"
+                aria-label="YouTube"
+              >
+                <Youtube className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

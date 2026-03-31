@@ -267,10 +267,12 @@ const HeroSection = () => {
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.7, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                className="fixed right-6 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-0 z-50"
+                className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0 z-50"
                 onMouseEnter={() => setSocialHovered(true)}
                 onMouseLeave={() => setSocialHovered(false)}
-                style={{ width: 56 }}
+                style={{ 
+                    width: typeof window !== 'undefined' && window.innerWidth >= 640 ? '56px' : '48px'
+                }}
             >
                 {/* Expanded icons — fan downward from center */}
                 <AnimatePresence>
@@ -292,13 +294,15 @@ const HeroSection = () => {
                             }}
                             whileHover={{ scale: 1.25, x: -6 }}
                             whileTap={{ scale: 0.9 }}
-                            className="flex h-10 w-10 items-center justify-center rounded-full text-white cursor-pointer mb-2"
+                            className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full text-white cursor-pointer mb-2"
                             style={{
                                 background: social.color,
                                 boxShadow: `0 4px 18px ${social.shadow}`,
                             }}
                         >
-                            {social.icon}
+                            <div className="h-4 w-4 sm:h-5 sm:w-5">
+                                {social.icon}
+                            </div>
                         </motion.a>
                     ))}
                 </AnimatePresence>
@@ -313,7 +317,7 @@ const HeroSection = () => {
                             : "0 0 0 0px rgba(16,185,129,0), 0 8px 24px rgba(16,185,129,0.35)",
                     }}
                     transition={{ type: "spring", stiffness: 340, damping: 22 }}
-                    className="flex h-12 w-12 items-center justify-center rounded-full text-white cursor-pointer"
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full text-white cursor-pointer"
                     style={{
                         background: "linear-gradient(135deg, rgba(16,185,129,0.85), rgba(20,184,166,0.85))",
                         backdropFilter: "blur(12px)",
@@ -321,7 +325,7 @@ const HeroSection = () => {
                     }}
                     aria-label="Follow us on social media"
                 >
-                    <Share2 className="h-5 w-5" />
+                    <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
                 </motion.div>
 
                 {/* Label below button */}

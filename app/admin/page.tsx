@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -132,10 +133,22 @@ function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">Admin Login</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+      <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
+        <CardHeader className="space-y-4 text-center pb-8">
+          <div className="mx-auto h-16 w-16 bg-white rounded-2xl p-2 shadow-sm border flex items-center justify-center">
+            <Image 
+              src="/faydajobs-logo.png" 
+              alt="Fayda Jobs Logo" 
+              width={80} 
+              height={80} 
+              className="object-contain"
+            />
+          </div>
+          <div>
+            <CardTitle className="text-2xl font-bold tracking-tight">Admin Dashboard</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Please sign in to manage your job portal</p>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -298,6 +311,56 @@ function AdminDashboard({
   const [requirements, setRequirements] = useState("");
   const [responsibilities, setResponsibilities] = useState("");
 
+  // Update payload indicator in real-time
+  const payloadIndicatorTimer = useRef<number | null>(null);
+  useEffect(() => {
+    const updatePayloadIndicator = () => {
+      const indicator = document.getElementById('payload-indicator');
+      if (indicator) {
+        // Use raw text for measuring
+        const cleanDesc = description || "";
+        const cleanReq = requirements || "";
+        const cleanRes = responsibilities || "";
+        
+        const totalPayloadBytes = new Blob([JSON.stringify({
+          description: cleanDesc,
+          requirements: cleanReq,
+          responsibilities: cleanRes
+        })]).size;
+
+        const maxSize = 200 * 1024; // 200KB limit (matches helper)
+        const sizeKB = (totalPayloadBytes / 1024).toFixed(2);
+        const maxKB = (maxSize / 1024).toFixed(2);
+        const percentage = Math.min((totalPayloadBytes / maxSize) * 100, 100);
+        
+        if (percentage > 90) {
+          indicator.className = 'text-sm text-red-600 font-bold';
+          indicator.textContent = `🚨 Critical Size: ${sizeKB} / ${maxKB} KB`;
+        } else if (percentage > 70) {
+          indicator.className = 'text-sm text-orange-600 font-medium';
+          indicator.textContent = `⚠️ Large: ${sizeKB} KB (cleaning applied)`;
+        } else {
+          indicator.className = 'text-sm text-muted-foreground';
+          indicator.textContent = `Size: ${sizeKB} KB`;
+        }
+      }
+    };
+
+    if (payloadIndicatorTimer.current) {
+      window.clearTimeout(payloadIndicatorTimer.current);
+    }
+
+    payloadIndicatorTimer.current = window.setTimeout(() => {
+      updatePayloadIndicator();
+    }, 250);
+
+    return () => {
+      if (payloadIndicatorTimer.current) {
+        window.clearTimeout(payloadIndicatorTimer.current);
+      }
+    };
+  }, [description, requirements, responsibilities]);
+
   // Populate rich text states when editing
   useEffect(() => {
     if (editingJob && isJobDialogOpen) {
@@ -361,13 +424,23 @@ function AdminDashboard({
       console.log("Attempting to create job with payload:", job);
       return createJob(job);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       toast.success("Job created successfully!");
       setIsJobDialogOpen(false);
+      // Clear form states
+      setDescription("");
+      setRequirements("");
+      setResponsibilities("");
     },
     onError: (error: any) => {
       console.error("Detailed error creating job. Message:", error.message, "Details:", error.details, "Code:", error.code, "Hint:", error.hint);
+      if (typeof error?.message === "string" && error.message.toLowerCase().includes("timed out")) {
+        // If the request completed just after our client timeout, refresh the list.
+        queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+        queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      }
       toast.error(error.message || "Failed to create job");
     },
   });
@@ -378,6 +451,7 @@ function AdminDashboard({
       return updateJob(id, updates);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       toast.success("Job updated successfully!");
       setIsJobDialogOpen(false);
@@ -385,6 +459,10 @@ function AdminDashboard({
     },
     onError: (error: any) => {
       console.error("Detailed error updating job. Message:", error.message, "Details:", error.details, "Code:", error.code, "Hint:", error.hint);
+      if (typeof error?.message === "string" && error.message.toLowerCase().includes("timed out")) {
+        queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+        queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      }
       toast.error(error.message || "Failed to update job");
     },
   });
@@ -532,37 +610,99 @@ function AdminDashboard({
 
   const handleJobSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🚀 Form submission started');
+    const startTime = performance.now();
+    
     const formData = new FormData(e.target as HTMLFormElement);
     const companyIdRaw = formData.get("company_id") as string;
     
-    // Get and process form data
+    // Get and process form data with timing
+    const processStart = performance.now();
+    
+    // Try direct form data first to bypass rich text state issues
+    const rawDesc = (formData.get("description") as string) || description;
+    const rawReq = (formData.get("requirements") as string) || requirements;
+    const rawRes = (formData.get("responsibilities") as string) || responsibilities;
+    
+    // Use raw text directly without HTML cleaning
+    const descriptionClean = rawDesc.trim();
+    const requirementsClean = rawReq.trim();
+    const responsibilitiesClean = rawRes.trim();
+    
+    console.log('🔍 Content Processing (Raw vs Processed):', {
+      desc: { processed: descriptionClean.length, raw: rawDesc.length },
+      req: { processed: requirementsClean.length, raw: rawReq.length }
+    });
+    
     const jobData = {
       title: formData.get("title") as string,
-      company_id: companyIdRaw || null,
-      location: formData.get("location") as string,
-      job_type: formData.get("type") as string,
-      category_id: (formData.get("category_id") as string) || null,
-      description: description, // Use state from RichTextEditor
-      requirements: requirements,
-      responsibilities: responsibilities,
-      application_link: formData.get("application_link") as string,
+      company_id: (companyIdRaw && companyIdRaw !== "") ? companyIdRaw : null,
+      location: (formData.get("location") as string || "Addis Ababa").trim(),
+      job_type: (formData.get("type") as string || "Full-time").trim(),
+      category_id: (formData.get("category_id") as string && formData.get("category_id") !== "") ? formData.get("category_id") as string : null,
+      description: descriptionClean.trim(),
+      requirements: requirementsClean.trim(),
+      responsibilities: responsibilitiesClean.trim(),
+      application_link: (formData.get("application_link") as string || "").trim(),
       deadline: (formData.get("deadline") as string) || null,
       featured: formData.get("featured") === "on",
     };
+    const processTime = performance.now() - processStart;
+    console.log(`⚡ Form processing took ${processTime.toFixed(2)}ms`);
+
+    // Payload size validation (Relaxed for rich text)
+    const MAX_TEXT_LENGTH = 50000; // Increased to 50k
+    const MAX_PAYLOAD_SIZE = 200 * 1024; // 200KB (must match helper)
+    const validationErrors = [];
+    
+    // Check individual field lengths
+    if (jobData.description.length > MAX_TEXT_LENGTH) {
+      validationErrors.push(`Description too long (${jobData.description.length} chars). Maximum: ${MAX_TEXT_LENGTH}`);
+    }
+    if (jobData.requirements?.length > MAX_TEXT_LENGTH) {
+      validationErrors.push(`Requirements too long (${jobData.requirements.length} chars). Maximum: ${MAX_TEXT_LENGTH}`);
+    }
+    if (jobData.responsibilities?.length > MAX_TEXT_LENGTH) {
+      validationErrors.push(`Responsibilities too long (${jobData.responsibilities.length} chars). Maximum: ${MAX_TEXT_LENGTH}`);
+    }
+    
+    // Calculate total payload size (bytes, not string length)
+    const totalPayloadBytes = new Blob([JSON.stringify(jobData)]).size;
+    console.log(`📦 Total payload size: ${totalPayloadBytes} bytes (${(totalPayloadBytes/1024).toFixed(2)} KB)`);
+    
+    if (totalPayloadBytes > MAX_PAYLOAD_SIZE) {
+      validationErrors.push(`Total content too large (${(totalPayloadBytes/1024).toFixed(2)} KB). Maximum: ${(MAX_PAYLOAD_SIZE/1024).toFixed(2)} KB`);
+    }
+
+    // Show validation errors if any
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors.join('. '));
+      console.error('Validation errors:', validationErrors);
+      return;
+    }
 
     console.log('📊 Processed job data (Rich Text):', {
       title: jobData.title,
       descLength: jobData.description.length,
       reqLength: jobData.requirements?.length,
-      resLength: jobData.responsibilities?.length
+      resLength: jobData.responsibilities.length,
+      payloadSizeKB: (totalPayloadBytes/1024).toFixed(2),
+      totalTime: (performance.now() - startTime).toFixed(2)
     });
 
     try {
+      console.log('🎯 Starting mutation...');
+      const mutationStart = performance.now();
+      
       if (editingJob) {
         updateJobMutation.mutate({ id: editingJob.id, ...jobData });
       } else {
         createJobMutation.mutate(jobData);
       }
+      
+      const mutationTime = performance.now() - mutationStart;
+      console.log(`⚡ Mutation call took ${mutationTime.toFixed(2)}ms`);
+      
     } catch (err: any) {
       console.error('Unexpected error in handleJobSubmit:', err);
       toast.error('An unexpected error occurred. Please check the console.');
@@ -853,7 +993,7 @@ function AdminDashboard({
                           required
                         />
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4">
                         <select
                           name="category_id"
                           className="w-full p-2 border rounded"
@@ -867,12 +1007,6 @@ function AdminDashboard({
                             </option>
                           ))}
                         </select>
-                        <Input
-                          name="application_link"
-                          placeholder="Application Link"
-                          defaultValue={editingJob?.application_link ?? ""}
-                          required
-                        />
                       </div>
                       <div className="space-y-1">
                         <label className="text-sm font-medium">Description</label>
@@ -901,14 +1035,26 @@ function AdminDashboard({
                         />
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium">Application Deadline</label>
-                        <Input
-                          name="deadline"
-                          type="date"
-                          placeholder="Deadline"
-                          defaultValue={editingJob?.deadline ?? ""}
-                        />
+                      <div className="space-y-4 mt-6 pt-6 border-t">
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium">Application Link (URL)</label>
+                          <Input
+                            name="application_link"
+                            placeholder="https://company.com/apply"
+                            defaultValue={editingJob?.application_link ?? ""}
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium">Application Deadline</label>
+                          <Input
+                            name="deadline"
+                            type="date"
+                            placeholder="Deadline"
+                            defaultValue={editingJob?.deadline ?? ""}
+                          />
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input
@@ -918,33 +1064,38 @@ function AdminDashboard({
                         />
                         <label>Featured Job</label>
                       </div>
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setIsJobDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="submit"
-                          disabled={
-                            createJobMutation.isPending ||
-                            updateJobMutation.isPending
-                          }
-                          className="min-w-[120px]"
-                        >
-                          {(createJobMutation.isPending || updateJobMutation.isPending) ? (
-                            <>
-                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                              {editingJob ? "Updating..." : "Creating..."}
-                            </>
-                          ) : (
-                            <>
-                              {editingJob ? "Update" : "Create"} Job
-                            </>
-                          )}
-                        </Button>
+                      <div className="flex justify-between items-center">
+                        <div className="text-sm text-muted-foreground">
+                          <span id="payload-indicator">Calculating size...</span>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsJobDialogOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={
+                              createJobMutation.isPending ||
+                              updateJobMutation.isPending
+                            }
+                            className="min-w-[120px]"
+                          >
+                            {(createJobMutation.isPending || updateJobMutation.isPending) ? (
+                              <>
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                                {editingJob ? "Updating..." : "Creating..."}
+                              </>
+                            ) : (
+                              <>
+                                {editingJob ? "Update" : "Create"} Job
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </form>
                   </DialogContent>

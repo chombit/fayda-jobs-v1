@@ -24,60 +24,69 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   "health-jobs": <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
 };
 
-const CATEGORY_COLORS: Record<string, { bg: string, hover: string, text: string, icon: string }> = {
+const CATEGORY_COLORS: Record<string, { bg: string, hover: string, text: string, icon: string, glow: string }> = {
   "ngo-jobs": { 
     bg: "from-emerald-500/20 to-teal-500/20", 
     hover: "hover:from-emerald-500/30 hover:to-teal-500/30", 
     text: "text-emerald-700 dark:text-emerald-400",
-    icon: "text-emerald-600 dark:text-emerald-400"
+    icon: "text-emerald-600 dark:text-emerald-400",
+    glow: "group-hover:shadow-emerald-500/25"
   },
   "government-jobs": { 
     bg: "from-blue-500/20 to-indigo-500/20", 
     hover: "hover:from-blue-500/30 hover:to-indigo-500/30", 
     text: "text-blue-700 dark:text-blue-400",
-    icon: "text-blue-600 dark:text-blue-400"
+    icon: "text-blue-600 dark:text-blue-400",
+    glow: "group-hover:shadow-blue-500/25"
   },
   "bank-jobs": { 
     bg: "from-purple-500/20 to-pink-500/20", 
     hover: "hover:from-purple-500/30 hover:to-pink-500/30", 
     text: "text-purple-700 dark:text-purple-400",
-    icon: "text-purple-600 dark:text-purple-400"
+    icon: "text-purple-600 dark:text-purple-400",
+    glow: "group-hover:shadow-purple-500/25"
   },
   "it-jobs": { 
     bg: "from-orange-500/20 to-red-500/20", 
     hover: "hover:from-orange-500/30 hover:to-red-500/30", 
     text: "text-orange-700 dark:text-orange-400",
-    icon: "text-orange-600 dark:text-orange-400"
+    icon: "text-orange-600 dark:text-orange-400",
+    glow: "group-hover:shadow-orange-500/25"
   },
   "remote-jobs": { 
     bg: "from-cyan-500/20 to-blue-500/20", 
     hover: "hover:from-cyan-500/30 hover:to-blue-500/30", 
     text: "text-cyan-700 dark:text-cyan-400",
-    icon: "text-cyan-600 dark:text-cyan-400"
+    icon: "text-cyan-600 dark:text-cyan-400",
+    glow: "group-hover:shadow-cyan-500/25"
   },
   "internship": { 
     bg: "from-green-500/20 to-emerald-500/20", 
     hover: "hover:from-green-500/30 hover:to-emerald-500/30", 
     text: "text-green-700 dark:text-green-400",
-    icon: "text-green-600 dark:text-green-400"
+    icon: "text-green-600 dark:text-green-400",
+    glow: "group-hover:shadow-green-500/25"
   },
   "fresh-graduate-jobs": { 
     bg: "from-yellow-500/20 to-orange-500/20", 
     hover: "hover:from-yellow-500/30 hover:to-orange-500/30", 
     text: "text-yellow-700 dark:text-yellow-400",
-    icon: "text-yellow-600 dark:text-yellow-400"
+    icon: "text-yellow-600 dark:text-yellow-400",
+    glow: "group-hover:shadow-yellow-500/25"
   },
   "engineering-jobs": { 
     bg: "from-red-500/20 to-pink-500/20", 
     hover: "hover:from-red-500/30 hover:to-pink-500/30", 
     text: "text-red-700 dark:text-red-400",
-    icon: "text-red-600 dark:text-red-400"
+    icon: "text-red-600 dark:text-red-400",
+    glow: "group-hover:shadow-red-500/25"
   },
   "health-jobs": { 
     bg: "from-rose-500/20 to-pink-500/20", 
     hover: "hover:from-rose-500/30 hover:to-pink-500/30", 
     text: "text-rose-700 dark:text-rose-400",
-    icon: "text-rose-600 dark:text-rose-400"
+    icon: "text-rose-600 dark:text-rose-400",
+    glow: "group-hover:shadow-rose-500/25"
   }
 };
 
@@ -149,19 +158,24 @@ export default function HomePage() {
           initial="hidden"
           animate="visible"
           variants={stagger}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
           <motion.div variants={fadeUp} custom={0}>
-            <h2 className="font-heading text-3xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-3">
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-sm font-semibold text-primary">Popular Categories</span>
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse delay-75" />
+            </div>
+            <h2 className="font-heading text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent mb-4 leading-tight">
               Browse by Category
             </h2>
-            <p className="text-muted-foreground text-base md:text-lg max-w-lg leading-relaxed">
-              Discover thousands of jobs tailored to your expertise and career aspirations
+            <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+              Discover thousands of jobs tailored to your expertise and career aspirations across Ethiopia
             </p>
           </motion.div>
           <motion.div variants={fadeUp} custom={1}>
             <Link href="/categories">
-              <Button variant="ghost" className="flex gap-2 text-primary hover:text-primary group px-6 py-3 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all duration-300">
+              <Button variant="outline" className="flex gap-2 text-primary hover:text-primary hover:bg-primary hover:text-white group px-8 py-3 rounded-full text-base font-semibold border-2 border-primary/30 hover:border-primary transition-all duration-500 hover:shadow-lg hover:shadow-primary/25 hover:scale-105">
                 <span>View All Categories</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
@@ -178,47 +192,67 @@ export default function HomePage() {
               bg: "from-primary/20 to-primary/10", 
               hover: "hover:from-primary/30 hover:to-primary/20", 
               text: "text-primary", 
-              icon: "text-primary" 
+              icon: "text-primary",
+              glow: "group-hover:shadow-primary/25"
             };
+            const jobCount = getJobCountForCategory(cat.id);
             return (
               <motion.div key={cat.id} variants={fadeUp} custom={i}>
                 <Link
                   href={`/jobs?category=${cat.id}`}
-                  className={`group block relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${colors.bg} ${colors.hover} p-6 transition-all duration-500 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-2 hover:border-primary/30`}
+                  className={`group block relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br ${colors.bg} ${colors.hover} p-8 transition-all duration-700 hover:shadow-2xl hover:shadow-xl ${colors.glow} hover:-translate-y-3 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-black/80 backdrop-blur-sm`}
                 >
-                  {/* Background decoration */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5" />
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+                  {/* Animated background gradient */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl animate-pulse" />
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-secondary/10 to-transparent rounded-full blur-2xl animate-pulse delay-75" />
                   </div>
                   
-                  {/* Top accent line */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* Animated top accent line */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                  
+                  {/* Floating particles */}
+                  <div className="absolute inset-0 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="absolute top-4 right-4 w-2 h-2 bg-primary/30 rounded-full animate-ping" />
+                    <div className="absolute bottom-6 left-6 w-1 h-1 bg-secondary/30 rounded-full animate-ping delay-150" />
+                    <div className="absolute top-12 left-8 w-1.5 h-1.5 bg-primary/20 rounded-full animate-ping delay-300" />
+                  </div>
                   
                   <div className="relative z-10">
-                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${colors.bg} ${colors.hover} mb-4 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20`}>
-                      <div className={colors.icon}>
-                        {CATEGORY_ICONS[cat.slug] || <Briefcase className="h-8 w-8" />}
+                    {/* Enhanced icon container */}
+                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br ${colors.bg} ${colors.hover} mb-6 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-xl group-hover:shadow-primary/20 backdrop-blur-sm border border-white/20 dark:border-black/20`}>
+                      <div className={`${colors.icon} transition-all duration-500 group-hover:scale-110`}>
+                        {CATEGORY_ICONS[cat.slug] || <Briefcase className="h-10 w-10" />}
                       </div>
                     </div>
                     
-                    <h3 className={`font-heading font-semibold text-xl mb-2 ${colors.text} group-hover:text-primary transition-colors duration-300`}>
+                    {/* Enhanced title */}
+                    <h3 className={`font-heading font-bold text-2xl mb-3 ${colors.text} group-hover:text-primary transition-all duration-500 group-hover:scale-105`}>
                       {cat.name}
                     </h3>
                     
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2 leading-relaxed">
+                    {/* Enhanced description */}
+                    <p className="text-muted-foreground text-sm mb-6 line-clamp-2 leading-relaxed group-hover:text-foreground/90 transition-colors duration-500">
                       Browse {cat.name.toLowerCase()} opportunities
                     </p>
                     
+                    {/* Enhanced footer with job count */}
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-medium ${colors.text} opacity-75`}>
-                        {getJobCountForCategory(cat.id)} jobs
-                      </span>
-                      <div className="flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1">
-                        <span className="text-xs font-medium">Explore</span>
-                        <ArrowRight className="h-3 w-3" />
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${colors.icon} animate-pulse`} />
+                        <span className={`text-sm font-semibold ${colors.text} group-hover:text-primary transition-colors duration-500`}>
+                          {jobCount} {jobCount === 1 ? 'job' : 'jobs'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:translate-x-2">
+                        <span className="text-sm font-bold">Explore</span>
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
                       </div>
                     </div>
+                    
+                    {/* Hover overlay effect */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                   </div>
                 </Link>
               </motion.div>
