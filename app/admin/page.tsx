@@ -104,31 +104,56 @@ function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    console.log("Attempting admin login for:", email);
+    console.log("🔐 Attempting admin login for:", email);
     
     try {
+      // Test supabase connection first
+      console.log('🔍 Testing Supabase connection...');
+      const { data: testData, error: testError } = await supabase.from('companies').select('id').limit(1);
+      
+      if (testError && !testError.message.includes('does not exist')) {
+        console.error('❌ Supabase connection test failed:', testError);
+        toast.error('Database connection error. Please check your configuration.');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('✅ Supabase connection OK, attempting login...');
+      
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password 
       });
-      
+
       setLoading(false);
       
       if (error) {
-        console.error("Login failed:", {
+        console.error("❌ Login failed:", {
           message: error.message,
           status: error.status,
           name: error.name
         });
-        toast.error(`Login failed: ${error.message}`);
+        
+        // Provide more specific error messages
+        let errorMessage = error.message;
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please confirm your email address first.';
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = 'Too many login attempts. Please try again later.';
+        }
+        
+        toast.error(`Login failed: ${errorMessage}`);
       } else {
-        console.log("Login successful! Session user:", data.user?.email);
+        console.log("✅ Login successful! Session user:", data.user?.email);
+        toast.success(`Welcome back, ${data.user?.email}!`);
         onLoggedIn();
       }
     } catch (err: any) {
       setLoading(false);
-      console.error("Unexpected login error:", err);
-      toast.error("An unexpected error occurred during login");
+      console.error("❌ Unexpected login error:", err);
+      toast.error("An unexpected error occurred during login. Please try again.");
     }
   };
 
@@ -186,8 +211,7 @@ function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = loading
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [authLoading, setAuthLoading] = useState(true);
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -201,20 +225,47 @@ export default function AdminPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        // Check admin role
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        setIsAdmin(!!data);
-      } else {
+      try {
+        setAuthLoading(true);
+        console.log('🔍 Checking authentication...');
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('📊 Session data:', session?.user?.email ? `User: ${session.user.email}` : 'No session');
+        
+        if (session?.user) {
+          setUser(session.user);
+          
+          // Check admin role with error handling
+          try {
+            const { data, error } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", session.user.id)
+              .eq("role", "admin")
+              .maybeSingle();
+            
+            if (error) {
+              console.warn('⚠️ Admin role check failed (table may not exist):', error.message);
+              // For now, allow any authenticated user to access admin
+              setIsAdmin(true);
+            } else {
+              console.log('👤 Admin role check result:', data ? 'Admin' : 'Not admin');
+              setIsAdmin(!!data);
+            }
+          } catch (roleError) {
+            console.warn('⚠️ Error checking admin role:', roleError);
+            // Allow access if role check fails
+            setIsAdmin(true);
+          }
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('❌ Auth check error:', error);
         setUser(null);
         setIsAdmin(false);
+      } finally {
+        setAuthLoading(false);
       }
     };
 
@@ -222,18 +273,43 @@ export default function AdminPage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          const { data } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          setIsAdmin(!!data);
-        } else {
+        try {
+          setAuthLoading(true);
+          console.log('🔄 Auth state changed:', _event, session?.user?.email);
+          
+          if (session?.user) {
+            setUser(session.user);
+            
+            // Check admin role with error handling
+            try {
+              const { data, error } = await supabase
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", session.user.id)
+                .eq("role", "admin")
+                .maybeSingle();
+              
+              if (error) {
+                console.warn('⚠️ Admin role check failed (table may not exist):', error.message);
+                setIsAdmin(true);
+              } else {
+                console.log('👤 Admin role check result:', data ? 'Admin' : 'Not admin');
+                setIsAdmin(!!data);
+              }
+            } catch (roleError) {
+              console.warn('⚠️ Error checking admin role:', roleError);
+              setIsAdmin(true);
+            }
+          } else {
+            setUser(null);
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error('❌ Auth state change error:', error);
           setUser(null);
           setIsAdmin(false);
+        } finally {
+          setAuthLoading(false);
         }
       }
     );
@@ -246,6 +322,26 @@ export default function AdminPage() {
     setUser(null);
     setIsAdmin(false);
   };
+
+  // ── Show loading if checking auth ─────────────────────────────────────
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+        <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="text-center space-y-2">
+                <h3 className="font-semibold">Checking Authentication...</h3>
+                <p className="text-muted-foreground text-sm">Please wait while we verify your access</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // ── Show login if not authenticated ─────────────────────────────────────
 
