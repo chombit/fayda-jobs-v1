@@ -185,7 +185,7 @@ export default function HomePage() {
 
         <motion.div
           variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
         >
           {categories?.slice(0, 8).map((cat, i) => {
             const colors = CATEGORY_COLORS[cat.slug] || { 
@@ -200,7 +200,7 @@ export default function HomePage() {
               <motion.div key={cat.id} variants={fadeUp} custom={i}>
                 <Link
                   href={`/jobs?category=${cat.id}`}
-                  className={`group block relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br ${colors.bg} ${colors.hover} p-8 transition-all duration-700 hover:shadow-2xl hover:shadow-xl ${colors.glow} hover:-translate-y-3 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-black/80 backdrop-blur-sm`}
+                  className={`group block relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${colors.bg} ${colors.hover} p-6 transition-all duration-700 hover:shadow-2xl hover:shadow-xl ${colors.glow} hover:-translate-y-2 hover:border-primary/40 hover:bg-white/80 dark:hover:bg-black/80 backdrop-blur-sm`}
                 >
                   {/* Animated background gradient */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700">
@@ -221,19 +221,19 @@ export default function HomePage() {
                   
                   <div className="relative z-10">
                     {/* Enhanced icon container */}
-                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br ${colors.bg} ${colors.hover} mb-6 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-xl group-hover:shadow-primary/20 backdrop-blur-sm border border-white/20 dark:border-black/20`}>
+                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${colors.bg} ${colors.hover} mb-4 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-lg group-hover:shadow-primary/20 backdrop-blur-sm border border-white/20 dark:border-black/20`}>
                       <div className={`${colors.icon} transition-all duration-500 group-hover:scale-110`}>
-                        {CATEGORY_ICONS[cat.slug] || <Briefcase className="h-10 w-10" />}
+                        {CATEGORY_ICONS[cat.slug] || <Briefcase className="h-8 w-8" />}
                       </div>
                     </div>
                     
                     {/* Enhanced title */}
-                    <h3 className={`font-heading font-bold text-2xl mb-3 ${colors.text} group-hover:text-primary transition-all duration-500 group-hover:scale-105`}>
+                    <h3 className={`font-heading font-bold text-xl mb-2 ${colors.text} group-hover:text-primary transition-all duration-500 group-hover:scale-105`}>
                       {cat.name}
                     </h3>
                     
                     {/* Enhanced description */}
-                    <p className="text-muted-foreground text-sm mb-6 line-clamp-2 leading-relaxed group-hover:text-foreground/90 transition-colors duration-500">
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2 leading-relaxed group-hover:text-foreground/90 transition-colors duration-500">
                       Browse {cat.name.toLowerCase()} opportunities
                     </p>
                     
@@ -265,6 +265,87 @@ export default function HomePage() {
       <div className="container py-4">
         <AdPlaceholder slot="home-after-categories" format="horizontal" />
       </div>
+
+      {/* Telegram Channel Section */}
+      <section className="container py-16 md:py-20 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-3xl" />
+        
+        <div className="relative z-10">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className="text-center mb-12"
+          >
+            <motion.div variants={fadeUp} custom={0}>
+              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 mb-6">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-blue-600 dark:text-blue-400">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">Join Our Community</span>
+                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              </div>
+              <h2 className="font-heading text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent mb-4 leading-tight">
+                Join Fayda Jobs Telegram Channel
+              </h2>
+              <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                Get instant job updates, career tips, and exclusive opportunities directly on your phone. Join thousands of professionals already benefiting from our daily job alerts!
+              </p>
+            </motion.div>
+            <motion.div variants={fadeUp} custom={1}>
+              <a 
+                href="https://t.me/faydajobs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 px-12 py-5 text-white font-bold text-lg shadow-xl shadow-blue-600/40 hover:shadow-blue-600/60 hover:shadow-2xl hover:scale-[1.05] active:scale-[0.98] transition-all duration-300 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                <span className="relative z-10">Join @faydajobs on Telegram</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1.5 group-hover:rotate-6 transition-all duration-300" />
+              </a>
+            </motion.div>
+          </motion.div>
+
+          {/* Benefits Grid */}
+          <motion.div
+            variants={stagger}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16"
+          >
+            <motion.div variants={fadeUp} custom={2} className="text-center p-6 rounded-2xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-blue-600 dark:text-blue-400">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                </svg>
+              </div>
+              <h3 className="font-heading font-semibold text-xl mb-2">Daily Job Updates</h3>
+              <p className="text-muted-foreground">Get instant notifications about new job opportunities matching your profile</p>
+            </motion.div>
+
+            <motion.div variants={fadeUp} custom={3} className="text-center p-6 rounded-2xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-blue-600 dark:text-blue-400">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <h3 className="font-heading font-semibold text-xl mb-2">Exclusive Opportunities</h3>
+              <p className="text-muted-foreground">Access jobs and career tips not available anywhere else</p>
+            </motion.div>
+
+            <motion.div variants={fadeUp} custom={4} className="text-center p-6 rounded-2xl bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-blue-600 dark:text-blue-400">
+                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+              </div>
+              <h3 className="font-heading font-semibold text-xl mb-2">Professional Network</h3>
+              <p className="text-muted-foreground">Connect with thousands of job seekers and employers in Ethiopia</p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Featured Jobs */}
       <section className="container py-16 md:py-20">
