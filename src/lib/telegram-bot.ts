@@ -20,13 +20,15 @@ const TELEGRAM_CONFIG: TelegramConfig = {
   channelId: process.env.TELEGRAM_CHANNEL_ID || '@faydajobs'
 };
 
-// Debug environment variables
-console.log('🔍 Telegram Bot Config:', {
+// Debug environment variables - more detailed for Vercel
+console.log('🔍 Telegram Bot Config (Runtime):', {
   hasBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
   hasChannelId: !!process.env.TELEGRAM_CHANNEL_ID,
   botTokenLength: process.env.TELEGRAM_BOT_TOKEN?.length,
   channelId: process.env.TELEGRAM_CHANNEL_ID,
-  nodeEnv: process.env.NODE_ENV
+  nodeEnv: process.env.NODE_ENV,
+  vercelEnv: process.env.VERCEL_ENV,
+  allEnvKeys: Object.keys(process.env).filter(k => k.includes('TELEGRAM') || k.includes('NEXT_PUBLIC'))
 });
 
 // Format job posting for Telegram with limited info to drive traffic
