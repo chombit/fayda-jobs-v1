@@ -210,8 +210,8 @@ function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = loading
-  const [authLoading, setAuthLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -221,94 +221,63 @@ export default function AdminPage() {
   const [isBlogDialogOpen, setIsBlogDialogOpen] = useState(false);
   const [editingBlogPost, setEditingBlogPost] = useState<BlogPost | null>(null);
 
-  // ── Auth check ──────────────────────────────────────────────────────────
+  // ── Auth check (only called when needed) ────────────────────────────────────
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setAuthLoading(true);
-        console.log('🔍 Checking authentication...');
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('📊 Session data:', session?.user?.email ? `User: ${session.user.email}` : 'No session');
+  const checkAuthStatus = async () => {
+    try {
+      setAuthLoading(true);
+      console.log('🔍 Checking authentication...');
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('📊 Session data:', session?.user?.email ? `User: ${session.user.email}` : 'No session');
+      
+      if (session?.user) {
+        setUser(session.user);
         
-        if (session?.user) {
-          setUser(session.user);
+        // Check admin role with error handling
+        try {
+          const { data, error } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .eq("role", "admin")
+            .maybeSingle();
           
-          // Check admin role with error handling
-          try {
-            const { data, error } = await supabase
-              .from("user_roles")
-              .select("role")
-              .eq("user_id", session.user.id)
-              .eq("role", "admin")
-              .maybeSingle();
-            
-            if (error) {
-              console.warn('⚠️ Admin role check failed (table may not exist):', error.message);
-              // For now, allow any authenticated user to access admin
-              setIsAdmin(true);
-            } else {
-              console.log('👤 Admin role check result:', data ? 'Admin' : 'Not admin');
-              setIsAdmin(!!data);
-            }
-          } catch (roleError) {
-            console.warn('⚠️ Error checking admin role:', roleError);
-            // Allow access if role check fails
+          if (error) {
+            console.warn('⚠️ Admin role check failed (table may not exist):', error.message);
+            // For now, allow any authenticated user to access admin
             setIsAdmin(true);
+          } else {
+            console.log('👤 Admin role check result:', data ? 'Admin' : 'Not admin');
+            setIsAdmin(!!data);
           }
-        } else {
-          setUser(null);
-          setIsAdmin(false);
+        } catch (roleError) {
+          console.warn('⚠️ Error checking admin role:', roleError);
+          // Allow access if role check fails
+          setIsAdmin(true);
         }
-      } catch (error) {
-        console.error('❌ Auth check error:', error);
+      } else {
         setUser(null);
         setIsAdmin(false);
-      } finally {
-        setAuthLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('❌ Auth check error:', error);
+      setUser(null);
+      setIsAdmin(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
-    checkAuth();
+  // ── Auth state listener (for logout detection) ───────────────────────────
 
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        try {
-          setAuthLoading(true);
-          console.log('🔄 Auth state changed:', _event, session?.user?.email);
-          
-          if (session?.user) {
-            setUser(session.user);
-            
-            // Check admin role with error handling
-            try {
-              const { data, error } = await supabase
-                .from("user_roles")
-                .select("role")
-                .eq("user_id", session.user.id)
-                .eq("role", "admin")
-                .maybeSingle();
-              
-              if (error) {
-                console.warn('⚠️ Admin role check failed (table may not exist):', error.message);
-                setIsAdmin(true);
-              } else {
-                console.log('👤 Admin role check result:', data ? 'Admin' : 'Not admin');
-                setIsAdmin(!!data);
-              }
-            } catch (roleError) {
-              console.warn('⚠️ Error checking admin role:', roleError);
-              setIsAdmin(true);
-            }
-          } else {
-            setUser(null);
-            setIsAdmin(false);
-          }
-        } catch (error) {
-          console.error('❌ Auth state change error:', error);
+        console.log('🔄 Auth state changed:', _event, session?.user?.email);
+        
+        if (_event === 'SIGNED_OUT' || !session) {
           setUser(null);
           setIsAdmin(false);
-        } finally {
           setAuthLoading(false);
         }
       }
@@ -346,7 +315,7 @@ export default function AdminPage() {
   // ── Show login if not authenticated ─────────────────────────────────────
 
   if (!user) {
-    return <AdminLogin onLoggedIn={() => {}} />;
+    return <AdminLogin onLoggedIn={checkAuthStatus} />;
   }
 
   if (isAdmin === null) {
