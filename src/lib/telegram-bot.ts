@@ -16,20 +16,23 @@ interface TelegramConfig {
 }
 
 const TELEGRAM_CONFIG: TelegramConfig = {
-  botToken: process.env.TELEGRAM_BOT_TOKEN || '',
-  channelId: process.env.TELEGRAM_CHANNEL_ID || '@faydajobs'
+  // Prevent access to environment variables in browser
+  botToken: typeof window === 'undefined' ? process.env.TELEGRAM_BOT_TOKEN || '' : '',
+  channelId: typeof window === 'undefined' ? process.env.TELEGRAM_CHANNEL_ID || '' : '',
 };
 
 // Debug environment variables - more detailed for Vercel
-console.log('🔍 Telegram Bot Config (Runtime):', {
-  hasBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
-  hasChannelId: !!process.env.TELEGRAM_CHANNEL_ID,
-  botTokenLength: process.env.TELEGRAM_BOT_TOKEN?.length,
-  channelId: process.env.TELEGRAM_CHANNEL_ID,
-  nodeEnv: process.env.NODE_ENV,
-  vercelEnv: process.env.VERCEL_ENV,
-  allEnvKeys: Object.keys(process.env).filter(k => k.includes('TELEGRAM') || k.includes('NEXT_PUBLIC'))
-});
+if (typeof window === 'undefined') {
+  console.log('🔍 Telegram Bot Config (Runtime):', {
+    hasBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
+    hasChannelId: !!process.env.TELEGRAM_CHANNEL_ID,
+    botTokenLength: process.env.TELEGRAM_BOT_TOKEN?.length,
+    channelId: process.env.TELEGRAM_CHANNEL_ID,
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+    allEnvKeys: Object.keys(process.env).filter(key => key.includes('TELEGRAM') || key.includes('NEXT_PUBLIC'))
+  });
+}
 
 // Format job posting for Telegram with limited info to drive traffic
 function formatJobPostForTelegram(job: TelegramJobPost): string {
@@ -60,6 +63,12 @@ function formatJobPostForTelegram(job: TelegramJobPost): string {
 
 // Send job posting to Telegram channel
 export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> {
+  // Prevent execution in browser environment
+  if (typeof window !== 'undefined') {
+    console.warn('🚫 Telegram posting blocked in browser environment');
+    return false;
+  }
+  
   try {
     console.log('🚀 Starting Telegram post for job:', job.title);
     
@@ -98,7 +107,7 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
             },
             {
               text: "📱 More Jobs",
-              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'
+              url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000/'
             }
           ]
         ]

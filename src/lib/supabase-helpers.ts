@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
-import { postJobToTelegram } from "./telegram-bot";
 
 // ── Exported types ──────────────────────────────────────────────────
 
@@ -183,75 +182,6 @@ export async function createJob(
     }
     
     console.log('✅ Job created successfully!');
-    
-    // Post to Telegram channel after successful database insertion
-    console.log('📤 Posting job to Telegram channel...');
-    console.log('🔍 Telegram environment check:', {
-      hasToken: !!process.env.TELEGRAM_BOT_TOKEN,
-      hasChannel: !!process.env.TELEGRAM_CHANNEL_ID,
-      tokenLength: process.env.TELEGRAM_BOT_TOKEN?.length,
-      channel: process.env.TELEGRAM_CHANNEL_ID
-    });
-    const telegramStart = performance.now();
-    
-    // Get company and category names for Telegram post
-    let companyName = job.company_id ? 'Unknown Company' : undefined;
-    let categoryName = job.category_id ? 'General' : undefined;
-    
-    // Try to fetch company name if company_id exists
-    if (job.company_id) {
-      try {
-        const { data: company } = await supabase
-          .from("companies")
-          .select("name")
-          .eq("id", job.company_id)
-          .single();
-        if (company) {
-          companyName = company.name;
-        }
-      } catch (err) {
-        console.warn('Could not fetch company name for Telegram post:', err);
-      }
-    }
-    
-    // Try to fetch category name if category_id exists
-    if (job.category_id) {
-      try {
-        const { data: category } = await supabase
-          .from("categories")
-          .select("name")
-          .eq("id", job.category_id)
-          .single();
-        if (category) {
-          categoryName = category.name;
-        }
-      } catch (err) {
-        console.warn('Could not fetch category name for Telegram post:', err);
-      }
-    }
-    
-    // Prepare job data for Telegram
-    const telegramJobData = {
-      title: job.title,
-      company_name: companyName,
-      location: job.location || 'Addis Ababa',
-      job_type: job.job_type || 'Full-time',
-      category_name: categoryName,
-      application_link: job.application_link || undefined,
-      slug: slug
-    };
-    
-    // Post to Telegram (fire and forget - don't wait for success)
-    postJobToTelegram(telegramJobData).then(success => {
-      const telegramTime = performance.now() - telegramStart;
-      if (success) {
-        console.log(`✅ Telegram post successful (${telegramTime.toFixed(2)}ms)`);
-      } else {
-        console.log(`⚠️ Telegram post failed (${telegramTime.toFixed(2)}ms) - but job was created successfully`);
-      }
-    }).catch(err => {
-      console.error('❌ Unexpected error posting to Telegram:', err);
-    });
     
     // Return success object without waiting for database response
     return { 
