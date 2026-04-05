@@ -485,9 +485,17 @@ function AdminDashboard({
   // ── Mutations ───────────────────────────────────────────────────────────
 
   const createJobMutation = useMutation({
-    mutationFn: (job: any) => {
+    mutationFn: async (job: any) => {
       console.log("Attempting to create job with payload:", job);
-      return createJob(job);
+      // Use pure server-side API that has full access to Telegram env vars
+      const response = await fetch('/api/create-job-pure-server', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(job)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      return result;
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
