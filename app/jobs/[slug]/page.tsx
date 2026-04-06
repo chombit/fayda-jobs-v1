@@ -11,6 +11,8 @@ import Footer from "@/components/Footer";
 import { fetchJobBySlug } from "@/lib/supabase-helpers";
 import { use } from "react";
 import type { Job } from "@/lib/supabase-helpers";
+import { sanitizeHtml } from "@/lib/utils/sanitize-html";
+import { generateJobPostingSchema, generateBreadcrumbListSchema } from "@/lib/seo/structured-data";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -34,6 +36,33 @@ export default function JobDetailPage({ params }: { params: Promise<{ slug: stri
     },
     enabled: !!slug
   });
+
+  // Generate structured data
+  const jobPostingSchema = job ? generateJobPostingSchema(job) : null;
+  const breadcrumbSchema = job ? generateBreadcrumbListSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Jobs', url: '/jobs' },
+    { name: job.title, url: `/jobs/${job.slug}` }
+  ]) : null;
+
+  // Generate metadata
+  const metadata = job ? {
+    title: `${job.title} - ${job.companies?.name || 'Company'} | Fayda Jobs`,
+    description: `Apply for ${job.title} position at ${job.companies?.name || 'Company'} in ${job.location}. ${job.description?.substring(0, 160)}...`,
+    openGraph: {
+      title: `${job.title} - ${job.companies?.name || 'Company'}`,
+      description: job.description?.substring(0, 160),
+      type: 'article',
+      publishedTime: job.created_at,
+      modifiedTime: job.updated_at,
+      authors: [job.companies?.name || 'Fayda Jobs'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${job.title} - ${job.companies?.name || 'Company'}`,
+      description: job.description?.substring(0, 160),
+    },
+  } : {};
 
   if (isLoading) {
     return (
@@ -77,6 +106,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ slug: stri
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Structured Data */}
+      {jobPostingSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingSchema) }}
+        />
+      )}
+      {breadcrumbSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        />
+      )}
+      
       <Navbar />
 
       <div className="container py-16">
@@ -144,7 +187,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ slug: stri
               </h2>
               <div
                 className="text-muted-foreground leading-relaxed rich-text-content"
-                dangerouslySetInnerHTML={{ __html: job.description || "" }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(job.description || "") }}
               />
             </div>
 
@@ -155,7 +198,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ slug: stri
                 </h2>
                 <div
                   className="text-muted-foreground leading-relaxed rich-text-content"
-                  dangerouslySetInnerHTML={{ __html: job.requirements }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(job.requirements) }}
                 />
               </div>
             )}
@@ -167,7 +210,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ slug: stri
                 </h2>
                 <div
                   className="text-muted-foreground leading-relaxed rich-text-content"
-                  dangerouslySetInnerHTML={{ __html: job.responsibilities }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(job.responsibilities) }}
                 />
               </div>
             )}

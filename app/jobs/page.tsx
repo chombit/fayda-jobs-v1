@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import JobCard from "@/components/JobCard";
+import { JobCardSkeletonGrid } from "../../components/JobCardSkeleton";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { fetchJobs, fetchCategories } from "@/lib/supabase-helpers";
@@ -212,9 +213,8 @@ export default function JobsPage() {
 
           {/* Job listings */}
           {isLoading ? (
-            <motion.div variants={fadeUp} custom={1} className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading jobs...</p>
+            <motion.div variants={fadeUp} custom={1}>
+              <JobCardSkeletonGrid count={6} />
             </motion.div>
           ) : error ? (
             <motion.div variants={fadeUp} custom={1} className="text-center py-12">
