@@ -49,7 +49,7 @@ export function formatJobPostForTelegram(job: TelegramJobPost): string {
   }
   
   message += `\ud83d\udcbc *${job.title}*\n`;
-  message += `\ud83d\udcbc *${job.job_type}*\n`;
+  message += `\ud83d\udcc8 *${job.job_type}*\n`;
   
   if (job.category_name) {
     message += `\ud83d\udcc2 *${job.category_name}*\n`;
@@ -59,8 +59,9 @@ export function formatJobPostForTelegram(job: TelegramJobPost): string {
     message += `\ud83d\udcc5 *Deadline: ${job.deadline}*\n`;
   }
   
-  message += `\n\n\ud83d\udc47 *Apply Now* \ud83d\udc47\n\n`;
-  message += `\ud83d\udd17 ${jobUrl}\n\n`;
+  message += `\n\n*👇 Apply Now* 👇\n\n`;
+  message += `▪️ *Find More Details here*\n`;
+  message += `*🗝️ ${jobUrl}*\n\n`;
   message += `\ud83d\udcf1 *More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/*\n`;
   message += `\ud83c\udf10 *Join @faydajobs for more opportunities!*`;
   
