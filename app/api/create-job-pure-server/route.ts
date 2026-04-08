@@ -113,6 +113,7 @@ export async function POST(request: Request) {
       location: jobData.location || 'Addis Ababa',
       job_type: jobData.job_type || 'Full-time',
       category_name: categoryName || jobData.category_name || 'General',
+      requirements: jobData.requirements,
       application_link: jobData.application_link,
       deadline: jobData.deadline,
       slug: slug

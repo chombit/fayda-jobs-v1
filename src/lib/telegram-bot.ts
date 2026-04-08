@@ -7,6 +7,7 @@ export interface TelegramJobPost {
   location: string;
   job_type: string;
   category_name?: string;
+  requirements?: string;
   application_link?: string;
   deadline?: string;
   slug: string;
@@ -36,34 +37,39 @@ if (typeof window === 'undefined') {
   });
 }
 
+// Strip HTML tags from text for Telegram display
+function stripHtml(html: string): string {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+}
+
 // Format job posting for Telegram with Fayda Jobs branding
 export function formatJobPostForTelegram(job: TelegramJobPost): string {
   const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
   
   // Create engaging message with icons and better formatting
-  let message = `                           \ud83d\udea8 *NEW JOB OPPORTUNITY* \ud83d\udea8                                         \n\n`;
+  let message = `                           🚨 *NEW JOB OPPORTUNITY* 🚨                                         \n\n`;
   
   // Company information first (above title)
   if (job.company_name) {
-    message += `\ud83d\udccb *${job.company_name}*\n`;
+    message += `📋 *Company : ${job.company_name}*\n`;
   }
   
-  message += `\ud83d\udcbc *${job.title}*\n`;
-  message += `\ud83d\udcc8 *${job.job_type}*\n`;
+  message += `💼 *Position : ${job.title}*\n`;
   
-  if (job.category_name) {
-    message += `\ud83d\udcc2 *${job.category_name}*\n`;
+  if (job.requirements) {
+    message += `📂 *Requirement : ${stripHtml(job.requirements)}*\n`;
   }
   
   if (job.deadline) {
-    message += `\ud83d\udcc5 *Deadline: ${job.deadline}*\n`;
+    message += `📅 *Deadline : ${job.deadline}*\n`;
   }
   
   message += `\n\n*👇 Apply Now* 👇\n\n`;
   message += `▪️ *Find More Details here*\n`;
   message += `*🗝️ ${jobUrl}*\n\n`;
-  message += `\ud83d\udcf1 *More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/*\n`;
-  message += `\ud83c\udf10 *Join @faydajobs for more opportunities!*`;
+  message += `📱 *More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/*\n`;
+  message += `🌐 *Join @faydajobs for more opportunities!*`;
   
   return message;
 }
