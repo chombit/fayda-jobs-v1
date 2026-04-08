@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/integrations/supabase/client';
-import { postJobToTelegram } from '@/lib/telegram-bot';
+import { postJobToTelegram, TelegramJobPost } from '@/lib/telegram-bot';
 import { generateSlug } from '@/lib/supabase-helpers';
 
 export async function POST(request: Request) {
@@ -35,22 +35,24 @@ export async function POST(request: Request) {
     });
     
     // Get company and category names for Telegram post
-    let companyName = jobData.company_id ? 'Unknown Company' : undefined;
-    let categoryName = jobData.category_id ? 'General' : undefined;
+    let companyName = undefined;
+    let companyLogo = undefined;
+    let categoryName = undefined;
     
-    // Try to fetch company name if company_id exists
+    // Try to fetch company name and logo if company_id exists
     if (jobData.company_id) {
       try {
         const { data: company } = await supabase
           .from("companies")
-          .select("name")
+          .select("name, logo_url, logo")
           .eq("id", jobData.company_id)
           .single();
         if (company) {
           companyName = company.name;
+          companyLogo = company.logo_url || company.logo;
         }
       } catch (err) {
-        console.warn('Could not fetch company name for Telegram post:', err);
+        console.warn('Could not fetch company data for Telegram post:', err);
       }
     }
     
@@ -70,51 +72,22 @@ export async function POST(request: Request) {
       }
     }
     
-    // Create simple text message (no Markdown formatting to avoid issues)
-    const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/jobs/${slug}`;
-    
-    let message = `🔥 NEW JOB OPPORTUNITY\n\n`;
-    message += `📋 ${jobData.title}\n`;
-    
-    if (companyName) {
-      message += `🏢 ${companyName}\n`;
-    }
-    
-    message += `📍 ${jobData.location || 'Addis Ababa'}\n`;
-    message += `💼 ${jobData.job_type || 'Full-time'}\n`;
-    
-    if (categoryName) {
-      message += `📂 ${categoryName}\n`;
-    }
-    
-    message += `\n👇 Apply Now 👇\n\n`;
-    message += `🔗 ${jobUrl}\n\n`;
-    message += `📱 More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}\n`;
-    message += `🌐 Join @faydajobs for more opportunities!`;
-    
-    const telegramApiUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-    
-    const payload = {
-      chat_id: process.env.TELEGRAM_CHANNEL_ID,
-      text: message
-      // Using simple text format instead of Markdown to avoid parsing issues
+    // Use enhanced Telegram bot function with Ethiopian Airlines format
+    const telegramPostData: TelegramJobPost = {
+      title: jobData.title,
+      company_name: companyName || "Unknown Company",
+      company_logo: companyLogo || undefined,
+      location: jobData.location || 'Addis Ababa',
+      job_type: jobData.job_type || 'Full-time',
+      category_name: categoryName || 'General',
+      application_link: jobData.application_link,
+      slug: slug
     };
     
-    console.log('📤 Sending Telegram payload:', payload);
+    console.log('📤 Enhanced Telegram post data:', telegramPostData);
     
-    const response = await fetch(telegramApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await response.json();
-    
-    console.log('📊 Telegram API response:', result);
-    
-    const telegramResult = result.ok;
+    // Send to Telegram with enhanced formatting
+    const telegramResult = await postJobToTelegram(telegramPostData);
     
     if (telegramResult) {
       console.log('✅ Telegram post successful!');

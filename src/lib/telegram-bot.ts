@@ -1,8 +1,9 @@
 // Telegram Bot Integration for Automatic Job Postings
 
-interface TelegramJobPost {
+export interface TelegramJobPost {
   title: string;
   company_name?: string;
+  company_logo?: string;
   location: string;
   job_type: string;
   category_name?: string;
@@ -34,29 +35,30 @@ if (typeof window === 'undefined') {
   });
 }
 
-// Format job posting for Telegram with limited info to drive traffic
-function formatJobPostForTelegram(job: TelegramJobPost): string {
+// Format job posting for Telegram with Fayda Jobs branding
+export function formatJobPostForTelegram(job: TelegramJobPost): string {
   const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
   
-  // Create engaging but limited content to drive clicks
-  let message = `🔥 *NEW JOB OPPORTUNITY*\n\n`;
-  message += `📋 *${job.title}*\n`;
+  // Create engaging message with icons and better formatting
+  let message = `                           \ud83d\udea8 NEW JOB OPPORTUNITY \ud83d\udea8                                         \n\n`;
   
+  // Company information first (above title)
   if (job.company_name) {
-    message += `🏢 ${job.company_name}\n`;
+    message += `\ud83d\udccb ${job.company_name}\n`;
   }
   
-  message += `📍 ${job.location}\n`;
-  message += `💼 ${job.job_type}\n`;
+  message += `\ud83d\udcbc ${job.title}\n`;
+  message += `\ud83d\udccd ${job.location}\n`;
+  message += `\ud83d\udcbc ${job.job_type}\n`;
   
   if (job.category_name) {
-    message += `📂 ${job.category_name}\n`;
+    message += `\ud83d\udcc2 ${job.category_name}\n`;
   }
   
-  message += `\n👇 *Apply Now - Click Below* 👇\n\n`;
-  message += `🔗 [View Full Details & Apply](${jobUrl})\n\n`;
-  message += `📱 Join @faydajobs for more opportunities!\n`;
-  message += `🌐 ${process.env.NEXT_PUBLIC_SITE_URL || 'faydajobs.com'}`;
+  message += `\n\n\ud83d\udc47 Apply Now \ud83d\udc47\n\n`;
+  message += `\ud83d\udd17 ${jobUrl}\n\n`;
+  message += `\ud83d\udcf1 More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/\n`;
+  message += `\ud83c\udf10 Join @faydajobs for more opportunities!`;
   
   return message;
 }
@@ -96,22 +98,7 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
     const payload = {
       chat_id: TELEGRAM_CONFIG.channelId,
       text: message,
-      parse_mode: 'Markdown',
-      disable_web_page_preview: false,
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "🚀 Apply Now",
-              url: jobUrl
-            },
-            {
-              text: "📱 More Jobs",
-              url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000/'
-            }
-          ]
-        ]
-      }
+      disable_web_page_preview: false
     };
 
     console.log('� Sending Telegram payload:', JSON.stringify(payload, null, 2));

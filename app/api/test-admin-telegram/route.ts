@@ -5,15 +5,15 @@ export async function POST() {
   try {
     console.log('🧪 Testing Telegram posting with exact admin interface format...');
     
-    // Simulate the exact data that would be sent from admin interface
+    // Simulate exact data that would be sent from admin interface
     const adminJobData = {
-      title: "🧪 Admin Interface Test Job - " + new Date().toLocaleTimeString(),
-      company_name: undefined, // No company selected
-      location: "Addis Ababa, Ethiopia", 
+      title: "Customer Service Officer",
+      company_name: "Ethiopian Airlines", 
+      location: "Bole International Airport, Addis Ababa", 
       job_type: "Full-time",
-      category_name: undefined, // No category selected
+      category_name: "Aviation",
       application_link: "http://localhost:3000",
-      slug: "admin-test-" + Date.now()
+      slug: "customer-service-officer-" + Date.now()
     };
     
     console.log('📤 Sending admin-format job to Telegram:', adminJobData);
