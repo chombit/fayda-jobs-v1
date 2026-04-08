@@ -12,6 +12,8 @@ export async function POST() {
       location: "Bole International Airport, Addis Ababa", 
       job_type: "Full-time",
       category_name: "Aviation",
+      deadline: "April 15, 2026",
+      company_logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Ethiopian_Airlines_Logo.svg/2560px-Ethiopian_Airlines_Logo.svg.png",
       application_link: "http://localhost:3000",
       slug: "customer-service-officer-" + Date.now()
     };

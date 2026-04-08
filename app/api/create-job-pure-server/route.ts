@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       job_type: jobData.job_type || 'Full-time',
       category_name: categoryName || 'General',
       application_link: jobData.application_link,
+      deadline: jobData.deadline,
       slug: slug
     };
     

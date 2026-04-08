@@ -8,6 +8,7 @@ export interface TelegramJobPost {
   job_type: string;
   category_name?: string;
   application_link?: string;
+  deadline?: string;
   slug: string;
 }
 
@@ -40,25 +41,28 @@ export function formatJobPostForTelegram(job: TelegramJobPost): string {
   const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
   
   // Create engaging message with icons and better formatting
-  let message = `                           \ud83d\udea8 NEW JOB OPPORTUNITY \ud83d\udea8                                         \n\n`;
+  let message = `                           \ud83d\udea8 *NEW JOB OPPORTUNITY* \ud83d\udea8                                         \n\n`;
   
   // Company information first (above title)
   if (job.company_name) {
-    message += `\ud83d\udccb ${job.company_name}\n`;
+    message += `\ud83d\udccb *${job.company_name}*\n`;
   }
   
-  message += `\ud83d\udcbc ${job.title}\n`;
-  message += `\ud83d\udccd ${job.location}\n`;
-  message += `\ud83d\udcbc ${job.job_type}\n`;
+  message += `\ud83d\udcbc *${job.title}*\n`;
+  message += `\ud83d\udcbc *${job.job_type}*\n`;
   
   if (job.category_name) {
-    message += `\ud83d\udcc2 ${job.category_name}\n`;
+    message += `\ud83d\udcc2 *${job.category_name}*\n`;
   }
   
-  message += `\n\n\ud83d\udc47 Apply Now \ud83d\udc47\n\n`;
+  if (job.deadline) {
+    message += `\ud83d\udcc5 *Deadline: ${job.deadline}*\n`;
+  }
+  
+  message += `\n\n\ud83d\udc47 *Apply Now* \ud83d\udc47\n\n`;
   message += `\ud83d\udd17 ${jobUrl}\n\n`;
-  message += `\ud83d\udcf1 More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/\n`;
-  message += `\ud83c\udf10 Join @faydajobs for more opportunities!`;
+  message += `\ud83d\udcf1 *More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/*\n`;
+  message += `\ud83c\udf10 *Join @faydajobs for more opportunities!*`;
   
   return message;
 }
@@ -70,19 +74,14 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
     console.warn('🚫 Telegram posting blocked in browser environment');
     return false;
   }
-  
-  try {
-    console.log('🚀 Starting Telegram post for job:', job.title);
-    
-    if (!TELEGRAM_CONFIG.botToken || !TELEGRAM_CONFIG.channelId) {
-      console.warn('⚠️ Telegram bot not configured - missing bot token or channel ID');
-      console.log('Available env vars:', {
-        TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ? 'SET' : 'MISSING',
-        TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID ? 'SET' : 'MISSING'
-      });
-      return false;
-    }
 
+  // Check configuration
+  if (!TELEGRAM_CONFIG.botToken || !TELEGRAM_CONFIG.channelId) {
+    console.warn('⚠️ Telegram bot not configured');
+    return false;
+  }
+
+  try {
     const message = formatJobPostForTelegram(job);
     const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
     
@@ -93,38 +92,83 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
       url: jobUrl
     });
     
-    const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
-    
-    const payload = {
-      chat_id: TELEGRAM_CONFIG.channelId,
-      text: message,
-      disable_web_page_preview: false
-    };
-
-    console.log('� Sending Telegram payload:', JSON.stringify(payload, null, 2));
-
-    const response = await fetch(telegramApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await response.json();
-    
-    console.log('📊 Telegram API response:', result);
-    
-    if (result.ok) {
-      console.log('✅ Job successfully posted to Telegram:', result.result.message_id);
-      return true;
+    // If company logo exists, send as photo with caption
+    if (job.company_logo) {
+      return await sendPhotoWithLogo(job, message);
     } else {
-      console.error('❌ Failed to post job to Telegram:', result.description);
-      console.error('Full error response:', result);
-      return false;
+      // No company logo, send text message
+      return await sendTextMessage(message);
     }
+    
   } catch (error) {
     console.error('❌ Error posting job to Telegram:', error);
+    return false;
+  }
+}
+
+// Helper function to send photo with company logo
+async function sendPhotoWithLogo(job: TelegramJobPost, message: string): Promise<boolean> {
+  const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendPhoto`;
+  
+  const payload = {
+    chat_id: TELEGRAM_CONFIG.channelId,
+    photo: job.company_logo,
+    caption: message,
+    parse_mode: 'Markdown'
+  };
+  
+  console.log('📸 Sending Telegram photo with company logo:', JSON.stringify(payload, null, 2));
+  
+  const response = await fetch(telegramApiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload)
+  });
+  
+  const result = await response.json();
+  console.log('📊 Telegram photo response:', result);
+  
+  if (result.ok) {
+    console.log('✅ Telegram photo post successful!');
+    return true;
+  } else {
+    console.error('❌ Telegram photo post failed:', result.description);
+    // Fallback to text message if photo fails
+    return await sendTextMessage(message);
+  }
+}
+
+// Helper function to send text message
+async function sendTextMessage(message: string): Promise<boolean> {
+  const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
+  
+  const payload = {
+    chat_id: TELEGRAM_CONFIG.channelId,
+    text: message,
+    parse_mode: 'Markdown',
+    disable_web_page_preview: true // Disable Fayda Jobs preview
+  };
+
+  console.log('📝 Sending Telegram text message:', JSON.stringify(payload, null, 2));
+
+  const response = await fetch(telegramApiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const result = await response.json();
+  console.log('📊 Telegram text response:', result);
+  
+  if (result.ok) {
+    console.log('✅ Telegram text post successful!');
+    return true;
+  } else {
+    console.error('❌ Telegram text post failed:', result.description);
     return false;
   }
 }
