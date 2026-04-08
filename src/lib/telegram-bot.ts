@@ -103,8 +103,8 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
     if (job.company_logo) {
       return await sendPhotoWithLogo(job, message);
     } else {
-      // No company logo, send text message
-      return await sendTextMessage(message);
+      // No company logo, send text message with buttons
+      return await sendTextMessage(message, jobUrl);
     }
     
   } catch (error) {
@@ -113,18 +113,43 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
   }
 }
 
-// Helper function to send photo with company logo
+// Helper function to send photo with company logo and buttons
 async function sendPhotoWithLogo(job: TelegramJobPost, message: string): Promise<boolean> {
   const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendPhoto`;
+  const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
+  const publicJobUrl = `https://faydajobs.com/jobs/${job.slug}`;
+  
+  // Create inline keyboard with buttons
+  const inlineKeyboard = {
+    inline_keyboard: [
+      [
+        {
+          text: "🚀 Apply Now",
+          url: publicJobUrl
+        }
+      ],
+      [
+        {
+          text: "🌐 More Jobs",
+          url: "https://faydajobs.com"
+        },
+        {
+          text: "📱 Visit Website",
+          url: "https://faydajobs.com"
+        }
+      ]
+    ]
+  };
   
   const payload = {
     chat_id: TELEGRAM_CONFIG.channelId,
     photo: job.company_logo,
     caption: message,
-    parse_mode: 'Markdown'
+    parse_mode: 'Markdown',
+    reply_markup: inlineKeyboard
   };
   
-  console.log('📸 Sending Telegram photo with company logo:', JSON.stringify(payload, null, 2));
+  console.log('📸 Sending photo with company logo and buttons:', JSON.stringify(payload, null, 2));
   
   const response = await fetch(telegramApiUrl, {
     method: 'POST',
@@ -135,30 +160,54 @@ async function sendPhotoWithLogo(job: TelegramJobPost, message: string): Promise
   });
   
   const result = await response.json();
-  console.log('📊 Telegram photo response:', result);
+  console.log('📊 Photo response with buttons:', result);
   
   if (result.ok) {
-    console.log('✅ Telegram photo post successful!');
+    console.log('✅ Photo with buttons sent successfully!');
     return true;
   } else {
     console.error('❌ Telegram photo post failed:', result.description);
-    // Fallback to text message if photo fails
-    return await sendTextMessage(message);
+    // Fallback to text message with buttons if photo fails
+    return await sendTextMessage(message, jobUrl);
   }
 }
 
-// Helper function to send text message
-async function sendTextMessage(message: string): Promise<boolean> {
+// Helper function to send text message with inline buttons
+async function sendTextMessage(message: string, jobUrl: string): Promise<boolean> {
   const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
   
+  // Extract job slug from jobUrl for public URL
+  const publicJobUrl = `https://faydajobs.com/jobs/${jobUrl.split('/').pop()}`;
+  
+  // Send single message with both content and buttons
   const payload = {
     chat_id: TELEGRAM_CONFIG.channelId,
     text: message,
     parse_mode: 'Markdown',
-    disable_web_page_preview: true // Disable Fayda Jobs preview
+    disable_web_page_preview: true,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "🚀 Apply Now",
+            url: publicJobUrl
+          }
+        ],
+        [
+          {
+            text: "🌐 More Jobs",
+            url: "https://faydajobs.com"
+          },
+          {
+            text: "📱 Visit Website", 
+            url: "https://faydajobs.com"
+          }
+        ]
+      ]
+    }
   };
 
-  console.log('📝 Sending Telegram text message:', JSON.stringify(payload, null, 2));
+  console.log('📝 Sending single message with content and buttons:', JSON.stringify(payload, null, 2));
 
   const response = await fetch(telegramApiUrl, {
     method: 'POST',
@@ -169,13 +218,13 @@ async function sendTextMessage(message: string): Promise<boolean> {
   });
 
   const result = await response.json();
-  console.log('📊 Telegram text response:', result);
+  console.log('📊 Single message response:', result);
   
   if (result.ok) {
-    console.log('✅ Telegram text post successful!');
+    console.log('✅ Single message with content and buttons sent successfully!');
     return true;
   } else {
-    console.error('❌ Telegram text post failed:', result.description);
+    console.error('❌ Single message failed:', result.description);
     return false;
   }
 }
