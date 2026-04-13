@@ -158,6 +158,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           featured: boolean
+          how_to_apply: string | null
           id: string
           is_batch_job: boolean
           job_type: string
@@ -178,6 +179,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           featured?: boolean
+          how_to_apply?: string | null
           id?: string
           is_batch_job?: boolean
           job_type?: string
@@ -198,6 +200,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           featured?: boolean
+          how_to_apply?: string | null
           id?: string
           is_batch_job?: boolean
           job_type?: string

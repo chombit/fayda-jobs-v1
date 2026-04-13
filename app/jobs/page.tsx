@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Search, Filter, ArrowUpDown, RefreshCw, MapPin } from "lucide-react";
@@ -39,6 +39,28 @@ export default function JobsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedType, setSelectedType] = useState("all");
+  const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
+
+  // Read URL parameters on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const search = urlParams.get('search');
+    const location = urlParams.get('location');
+    
+    console.log('URL params loaded:', { search, location, url: window.location.search });
+    
+    if (search) {
+      console.log('Setting search query:', search);
+      setSearchQuery(search);
+    }
+    if (location) {
+      console.log('Setting location:', location);
+      setSelectedLocation(location);
+    }
+    
+    // Mark URL params as loaded
+    setUrlParamsLoaded(true);
+  }, []);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -52,12 +74,15 @@ export default function JobsPage() {
   const { data: jobs, isLoading, error, refetch } = useQuery({
     queryKey: ["jobs", { search: searchQuery, category: selectedCategory, location: selectedLocation, type: selectedType }],
     queryFn: async () => {
+      console.log('Query executing with:', { searchQuery, selectedCategory, selectedLocation, selectedType });
       const { data, error } = await fetchJobs({ 
         search: searchQuery, 
         category: selectedCategory, 
         location: selectedLocation,
         jobType: selectedType 
       });
+      
+      console.log('Query result:', { data: data?.length, error });
       
       if (error) throw error;
       return data || [];
@@ -66,7 +91,7 @@ export default function JobsPage() {
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnMount: true,
     refetchOnWindowFocus: false,
-    enabled: true,
+    enabled: urlParamsLoaded, // Only run after URL params are loaded
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

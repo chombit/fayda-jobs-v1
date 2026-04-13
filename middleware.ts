@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
   // CSP headers
   const cspHeader = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://www.googletagmanager.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",

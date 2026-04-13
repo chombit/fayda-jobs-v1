@@ -24,10 +24,23 @@ export async function fetchJobs(params?: {
   offset?: number;
 }) {
   try {
-    let query = supabase
+    // Build the base query with pagination
+    let baseQuery = supabase
       .from("jobs")
       .select("*, companies(*), categories(*)")
       .order("posted_date", { ascending: false });
+
+    // Apply pagination to the base query using type assertion
+    if (params?.limit) {
+      baseQuery = (baseQuery as any).limit(params.limit);
+    }
+
+    if (params?.offset) {
+      baseQuery = (baseQuery as any).offset(params.offset);
+    }
+
+    // Apply filters and execute the query
+    let query = baseQuery;
 
     // Text search using ilike
     if (params?.search) {
@@ -49,14 +62,6 @@ export async function fetchJobs(params?: {
 
     if (params?.featured) {
       query = query.eq("featured", true);
-    }
-
-    if (params?.limit) {
-      query = query.limit(params.limit);
-    }
-
-    if (params?.offset) {
-      query = query.offset(params.offset);
     }
 
     const { data, error } = await query;
