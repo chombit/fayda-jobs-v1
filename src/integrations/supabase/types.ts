@@ -151,6 +151,7 @@ export type Database = {
       jobs: {
         Row: {
           application_link: string | null
+          batch_id: string | null
           category_id: string | null
           company_id: string | null
           created_at: string
@@ -158,6 +159,7 @@ export type Database = {
           description: string | null
           featured: boolean
           id: string
+          is_batch_job: boolean
           job_type: string
           location: string
           posted_date: string
@@ -169,6 +171,7 @@ export type Database = {
         }
         Insert: {
           application_link?: string | null
+          batch_id?: string | null
           category_id?: string | null
           company_id?: string | null
           created_at?: string
@@ -176,6 +179,7 @@ export type Database = {
           description?: string | null
           featured?: boolean
           id?: string
+          is_batch_job?: boolean
           job_type?: string
           location?: string
           posted_date?: string
@@ -187,6 +191,7 @@ export type Database = {
         }
         Update: {
           application_link?: string | null
+          batch_id?: string | null
           category_id?: string | null
           company_id?: string | null
           created_at?: string
@@ -194,6 +199,7 @@ export type Database = {
           description?: string | null
           featured?: boolean
           id?: string
+          is_batch_job?: boolean
           job_type?: string
           location?: string
           posted_date?: string

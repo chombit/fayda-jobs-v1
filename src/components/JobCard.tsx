@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Clock, Calendar, Briefcase, Star, ArrowUpRight, Users, Building, TrendingUp, Heart, BookmarkPlus, ExternalLink } from "lucide-react";
+import { MapPin, Clock, Calendar, Briefcase, Star, ArrowUpRight, Users, Building, TrendingUp, Heart, BookmarkPlus, ExternalLink, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Job } from "@/lib/supabase-helpers";
 import { format, formatDistanceToNow, isPast } from "date-fns";
@@ -14,6 +14,7 @@ const JobCard = ({ job }: JobCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const isExpired = job.deadline ? isPast(new Date(job.deadline)) : false;
   const isUrgent = job.deadline && !isExpired && new Date(job.deadline).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000; // Less than 7 days
+  const isBatchJob = job.is_batch_job || false;
   
   const handleBookmark = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,8 +48,17 @@ const JobCard = ({ job }: JobCardProps) => {
           </div>
         )}
         
+        {/* Batch job badge */}
+        {isBatchJob && !job.featured && (
+          <div className="absolute top-4 right-4 z-10">
+            <Badge className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0 shadow-lg animate-pulse">
+              <Layers className="h-3 w-3 mr-1" /> Batch Job
+            </Badge>
+          </div>
+        )}
+        
         {/* Urgent badge */}
-        {isUrgent && !job.featured && (
+        {isUrgent && !job.featured && !isBatchJob && (
           <div className="absolute top-4 right-4 z-10">
             <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg animate-pulse">
               <TrendingUp className="h-3 w-3 mr-1" /> Urgent
@@ -97,6 +107,11 @@ const JobCard = ({ job }: JobCardProps) => {
             <div className="flex-1 min-w-0">
               <h3 className="font-heading font-bold text-lg text-card-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2 leading-tight mb-2">
                 {job.title}
+                {isBatchJob && (
+                  <span className="ml-2 text-xs font-normal text-purple-600 dark:text-purple-400">
+                    (Part of batch hiring)
+                  </span>
+                )}
               </h3>
               <p className="text-sm font-medium text-muted-foreground">
                 {job.companies?.name || "Unknown Company"}
@@ -119,6 +134,12 @@ const JobCard = ({ job }: JobCardProps) => {
             <Clock className="h-3 w-3 mr-1" />
             {job.job_type}
           </Badge>
+          {isBatchJob && (
+            <Badge className="text-xs rounded-lg font-medium bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300">
+              <Layers className="h-3 w-3 mr-1" />
+              Multiple Positions
+            </Badge>
+          )}
           {job.deadline && (
             <Badge variant={isExpired ? "destructive" : "outline"} className={`text-xs rounded-lg font-medium transition-all duration-300 ${
               isExpired 
@@ -151,7 +172,7 @@ const JobCard = ({ job }: JobCardProps) => {
           </span>
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-0 translate-x-2">
-              View Details
+              {isBatchJob ? "View All Positions" : "View Details"}
             </span>
             <ArrowUpRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
           </div>

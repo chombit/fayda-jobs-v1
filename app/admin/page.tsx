@@ -375,6 +375,22 @@ function AdminDashboard({
   const [description, setDescription] = useState("");
   const [requirements, setRequirements] = useState("");
   const [responsibilities, setResponsibilities] = useState("");
+  const [howToApply, setHowToApply] = useState("");
+  
+  // State for batch job posting
+  const [positions, setPositions] = useState([
+    {
+      id: 1,
+      title: "",
+      category_id: "",
+      location: "",
+      description: "",
+      requirements: "",
+      responsibilities: "",
+      how_to_apply: ""
+    }
+  ]);
+  const [isBatchMode, setIsBatchMode] = useState(false);
 
   // Update payload indicator in real-time
   const payloadIndicatorTimer = useRef<number | null>(null);
@@ -432,11 +448,13 @@ function AdminDashboard({
       setDescription(editingJob.description || "");
       setRequirements(editingJob.requirements || "");
       setResponsibilities(editingJob.responsibilities || "");
+      setHowToApply(editingJob.how_to_apply || "");
     } else if (!editingJob && isJobDialogOpen) {
       // Clear states for new job
       setDescription("");
       setRequirements("");
       setResponsibilities("");
+      setHowToApply("");
     }
   }, [editingJob, isJobDialogOpen]);
 
@@ -497,24 +515,50 @@ function AdminDashboard({
       if (!response.ok) throw new Error(result.error);
       return result;
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
       toast.success("Job created successfully!");
       setIsJobDialogOpen(false);
-      // Clear form states
-      setDescription("");
-      setRequirements("");
-      setResponsibilities("");
+      setEditingJob(null);
+      resetBatchMode();
     },
     onError: (error: any) => {
-      console.error("Detailed error creating job. Message:", error.message, "Details:", error.details, "Code:", error.code, "Hint:", error.hint);
-      if (typeof error?.message === "string" && error.message.toLowerCase().includes("timed out")) {
-        // If the request completed just after our client timeout, refresh the list.
-        queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
-        queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      }
+      console.error("Failed to create job:", error);
       toast.error(error.message || "Failed to create job");
+    },
+  });
+
+  const createBatchJobsMutation = useMutation({
+    mutationFn: async (batchData: { sharedFields: any; positions: any[] }) => {
+      console.log("Attempting to create batch jobs with payload:", batchData);
+      const response = await fetch('/api/create-batch-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batchData)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      return result;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+      const createdCount = data.createdJobs?.length || 0;
+      const updatedCount = data.updatedJobs?.length || 0;
+      
+      if (createdCount > 0) {
+        toast.success(`${createdCount} new job(s) created and posted to Telegram!`);
+      }
+      if (updatedCount > 0) {
+        toast.success(`${updatedCount} job(s) updated!`);
+      }
+      
+      setIsJobDialogOpen(false);
+      setEditingJob(null);
+      resetBatchMode();
+    },
+    onError: (error: any) => {
+      console.error("Failed to create batch jobs:", error);
+      toast.error(error.message || "Failed to create batch jobs");
     },
   });
 
@@ -679,6 +723,52 @@ function AdminDashboard({
     },
   });
 
+  // ── Batch Job Management Functions ───────────────────────────────────────
+
+  const addPosition = () => {
+    const newId = Math.max(...positions.map(p => p.id)) + 1;
+    setPositions([...positions, {
+      id: newId,
+      title: "",
+      category_id: "",
+      location: "",
+      description: "",
+      requirements: "",
+      responsibilities: "",
+      how_to_apply: ""
+    }]);
+  };
+
+  const removePosition = (id: number) => {
+    if (positions.length > 1) {
+      setPositions(positions.filter(p => p.id !== id));
+    }
+  };
+
+  const updatePosition = (id: number, field: string, value: string) => {
+    setPositions(positions.map(p => 
+      p.id === id ? { ...p, [field]: value } : p
+    ));
+  };
+
+  const resetBatchMode = () => {
+    setIsBatchMode(false);
+    setPositions([{
+      id: 1,
+      title: "",
+      category_id: "",
+      location: "",
+      description: "",
+      requirements: "",
+      responsibilities: "",
+      how_to_apply: ""
+    }]);
+    setDescription("");
+    setRequirements("");
+    setResponsibilities("");
+    setHowToApply("");
+  };
+
   // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleJobSubmit = (e: React.FormEvent) => {
@@ -689,18 +779,55 @@ function AdminDashboard({
     const formData = new FormData(e.target as HTMLFormElement);
     const companyIdRaw = formData.get("company_id") as string;
     
-    // Get and process form data with timing
+    // Handle batch job submission
+    if (isBatchMode) {
+      const sharedFields = {
+        company_id: (companyIdRaw && companyIdRaw !== "") ? companyIdRaw : null,
+        application_link: (formData.get("application_link") as string || "").trim(),
+        deadline: (formData.get("deadline") as string) || null,
+        featured: formData.get("featured") === "on",
+      };
+      
+      // Validate positions
+      const invalidPositions = positions.filter(p => !p.title.trim() || !p.category_id || !p.location.trim());
+      if (invalidPositions.length > 0) {
+        toast.error("Please fill in title, category, and location for all positions");
+        return;
+      }
+      
+      const batchData = {
+        sharedFields,
+        positions: positions.map(p => ({
+          ...p,
+          title: p.title.trim(),
+          category_id: p.category_id,
+          location: p.location.trim(),
+          description: p.description?.trim() || "",
+          requirements: p.requirements?.trim() || "",
+          responsibilities: p.responsibilities?.trim() || "",
+          how_to_apply: p.how_to_apply?.trim() || "",
+        }))
+      };
+      
+      console.log('📋 Submitting batch jobs:', batchData);
+      createBatchJobsMutation.mutate(batchData);
+      return;
+    }
+    
+    // Handle single job submission (existing logic)
     const processStart = performance.now();
     
     // Try direct form data first to bypass rich text state issues
     const rawDesc = (formData.get("description") as string) || description;
     const rawReq = (formData.get("requirements") as string) || requirements;
     const rawRes = (formData.get("responsibilities") as string) || responsibilities;
+    const rawHowToApply = (formData.get("how_to_apply") as string) || howToApply;
     
     // Use raw text directly without HTML cleaning
     const descriptionClean = rawDesc.trim();
     const requirementsClean = rawReq.trim();
     const responsibilitiesClean = rawRes.trim();
+    const howToApplyClean = rawHowToApply.trim();
     
     console.log('🔍 Content Processing (Raw vs Processed):', {
       desc: { processed: descriptionClean.length, raw: rawDesc.length },
@@ -716,6 +843,7 @@ function AdminDashboard({
       description: descriptionClean.trim(),
       requirements: requirementsClean.trim(),
       responsibilities: responsibilitiesClean.trim(),
+      how_to_apply: howToApplyClean.trim(),
       application_link: (formData.get("application_link") as string || "").trim(),
       deadline: (formData.get("deadline") as string) || null,
       featured: formData.get("featured") === "on",
@@ -1022,121 +1150,300 @@ function AdminDashboard({
                       Add Job
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>
-                        {editingJob ? "Edit Job" : "Add New Job"}
+                        {editingJob ? "Edit Job" : (isBatchMode ? "Batch Post Jobs" : "Add New Job")}
                       </DialogTitle>
                       <DialogDescription>
-                        {editingJob ? "Modify the details of the existing job posting." : "Fill in the details to post a new job."}
+                        {editingJob ? "Modify the details of the existing job posting." : 
+                         isBatchMode ? "Post multiple positions for the same company. Shared fields apply to all positions." : 
+                         "Fill in the details to post a new job."}
                       </DialogDescription>
                     </DialogHeader>
+                    
+                    {/* Batch Mode Toggle */}
+                    {!editingJob && (
+                      <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="batch-mode"
+                          checked={isBatchMode}
+                          onChange={(e) => {
+                            setIsBatchMode(e.target.checked);
+                            if (!e.target.checked) {
+                              resetBatchMode();
+                            }
+                          }}
+                          className="rounded"
+                        />
+                        <label htmlFor="batch-mode" className="text-sm font-medium cursor-pointer">
+                          Enable Batch Posting (Multiple Positions)
+                        </label>
+                      </div>
+                    )}
+                    
                     <form onSubmit={handleJobSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          name="title"
-                          placeholder="Job Title"
-                          defaultValue={editingJob?.title}
-                          required
-                        />
-                        <select
-                          name="company_id"
-                          className="w-full p-2 border rounded"
-                          defaultValue={editingJob?.company_id ?? ""}
-                        >
-                          <option value="">Select Company</option>
-                          {companies?.map((comp) => (
-                            <option key={comp.id} value={comp.id}>
-                              {comp.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          name="location"
-                          placeholder="Location"
-                          defaultValue={editingJob?.location}
-                          required
-                        />
-                        <Input
-                          name="type"
-                          placeholder="Job Type (e.g. Full-time)"
-                          defaultValue={editingJob?.job_type}
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 gap-4">
-                        <select
-                          name="category_id"
-                          className="w-full p-2 border rounded"
-                          defaultValue={editingJob?.category_id ?? ""}
-                          required
-                        >
-                          <option value="">Select Category</option>
-                          {categories?.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium">Description</label>
-                        <RichTextEditor 
-                          value={description} 
-                          onChange={setDescription} 
-                          placeholder="Detailed job description..." 
-                        />
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium">Requirements</label>
-                        <RichTextEditor 
-                          value={requirements} 
-                          onChange={setRequirements} 
-                          placeholder="Job requirements and qualifications..." 
-                        />
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <label className="text-sm font-medium">Responsibilities</label>
-                        <RichTextEditor 
-                          value={responsibilities} 
-                          onChange={setResponsibilities} 
-                          placeholder="Key responsibilities and daily tasks..." 
-                        />
-                      </div>
-
-                      <div className="space-y-4 mt-6 pt-6 border-t">
-                        <div className="space-y-1">
-                          <label className="text-sm font-medium">Application Link (URL)</label>
+                      {/* Shared Fields Section */}
+                      <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h3 className="font-semibold text-blue-900">Shared Fields {isBatchMode ? "(Apply to all positions)" : ""}</h3>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <select
+                            name="company_id"
+                            className="w-full p-2 border rounded"
+                            defaultValue={editingJob?.company_id ?? ""}
+                            required
+                          >
+                            <option value="">Select Company</option>
+                            {companies?.map((comp) => (
+                              <option key={comp.id} value={comp.id}>
+                                {comp.name}
+                              </option>
+                            ))}
+                          </select>
+                          
+                          {!isBatchMode && (
+                            <Input
+                              name="location"
+                              placeholder="Location"
+                              defaultValue={editingJob?.location}
+                              required
+                            />
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {!isBatchMode && (
+                            <Input
+                              name="type"
+                              placeholder="Job Type (e.g. Full-time)"
+                              defaultValue={editingJob?.job_type}
+                              required
+                            />
+                          )}
+                          
                           <Input
                             name="application_link"
-                            placeholder="https://company.com/apply"
+                            placeholder="Application Link (URL)"
                             defaultValue={editingJob?.application_link ?? ""}
                             required
                           />
+                          
+                          {isBatchMode && (
+                            <Input
+                              name="deadline"
+                              type="date"
+                              placeholder="Application Deadline"
+                              defaultValue={editingJob?.deadline ?? ""}
+                            />
+                          )}
                         </div>
-
-                        <div className="space-y-1">
-                          <label className="text-sm font-medium">Application Deadline</label>
-                          <Input
-                            name="deadline"
-                            type="date"
-                            placeholder="Deadline"
-                            defaultValue={editingJob?.deadline ?? ""}
-                          />
+                        
+                        {!isBatchMode && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                              name="deadline"
+                              type="date"
+                              placeholder="Application Deadline"
+                              defaultValue={editingJob?.deadline ?? ""}
+                            />
+                            
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                name="featured"
+                                defaultChecked={editingJob?.featured}
+                              />
+                              <label>Featured Job</label>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {isBatchMode && (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              name="featured"
+                              defaultChecked={editingJob?.featured}
+                            />
+                            <label>Featured Jobs (All positions)</label>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Single Job Mode */}
+                      {!isBatchMode && (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                              name="title"
+                              placeholder="Job Title"
+                              defaultValue={editingJob?.title}
+                              required
+                            />
+                            
+                            <select
+                              name="category_id"
+                              className="w-full p-2 border rounded"
+                              defaultValue={editingJob?.category_id ?? ""}
+                              required
+                            >
+                              <option value="">Select Category</option>
+                              {categories?.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                  {cat.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium">Description</label>
+                            <RichTextEditor 
+                              value={description} 
+                              onChange={setDescription} 
+                              placeholder="Detailed job description..." 
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium">Requirements</label>
+                            <RichTextEditor 
+                              value={requirements} 
+                              onChange={setRequirements} 
+                              placeholder="Job requirements and qualifications..." 
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium">Responsibilities</label>
+                            <RichTextEditor 
+                              value={responsibilities} 
+                              onChange={setResponsibilities} 
+                              placeholder="Key responsibilities and daily tasks..." 
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium">How to Apply</label>
+                            <RichTextEditor 
+                              value={howToApply} 
+                              onChange={setHowToApply} 
+                              placeholder="Specify required documents (CV, Transcript, ID, etc.) and application instructions..." 
+                            />
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Batch Mode - Dynamic Positions */}
+                      {isBatchMode && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Positions ({positions.length})</h3>
+                            <Button
+                              type="button"
+                              onClick={addPosition}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Position
+                            </Button>
+                          </div>
+                          
+                          {positions.map((position, index) => (
+                            <div key={position.id} className="p-4 border rounded-lg space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium">Position {index + 1}</h4>
+                                {positions.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    onClick={() => removePosition(position.id)}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Input
+                                  placeholder="Job Title"
+                                  value={position.title}
+                                  onChange={(e) => updatePosition(position.id, 'title', e.target.value)}
+                                  required
+                                />
+                                
+                                <select
+                                  className="w-full p-2 border rounded"
+                                  value={position.category_id}
+                                  onChange={(e) => updatePosition(position.id, 'category_id', e.target.value)}
+                                  required
+                                >
+                                  <option value="">Select Category</option>
+                                  {categories?.map((cat) => (
+                                    <option key={cat.id} value={cat.id}>
+                                      {cat.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                                <Input
+                                  placeholder="Location"
+                                  value={position.location}
+                                  onChange={(e) => updatePosition(position.id, 'location', e.target.value)}
+                                  required
+                                />
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <label className="text-sm font-medium">Description</label>
+                                <textarea
+                                  className="w-full p-2 border rounded min-h-[100px]"
+                                  placeholder="Detailed job description..."
+                                  value={position.description}
+                                  onChange={(e) => updatePosition(position.id, 'description', e.target.value)}
+                                />
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <label className="text-sm font-medium">Requirements</label>
+                                <textarea
+                                  className="w-full p-2 border rounded min-h-[100px]"
+                                  placeholder="Job requirements and qualifications..."
+                                  value={position.requirements}
+                                  onChange={(e) => updatePosition(position.id, 'requirements', e.target.value)}
+                                />
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <label className="text-sm font-medium">Responsibilities</label>
+                                <textarea
+                                  className="w-full p-2 border rounded min-h-[100px]"
+                                  placeholder="Key responsibilities and daily tasks..."
+                                  value={position.responsibilities}
+                                  onChange={(e) => updatePosition(position.id, 'responsibilities', e.target.value)}
+                                />
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <label className="text-sm font-medium">How to Apply</label>
+                                <textarea
+                                  className="w-full p-2 border rounded min-h-[100px]"
+                                  placeholder="Specify required documents (CV, Transcript, ID, etc.) and application instructions..."
+                                  value={position.how_to_apply}
+                                  onChange={(e) => updatePosition(position.id, 'how_to_apply', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          name="featured"
-                          defaultChecked={editingJob?.featured}
-                        />
-                        <label>Featured Job</label>
-                      </div>
+                      )}
+                      
                       <div className="flex justify-between items-center">
                         <div className="text-sm text-muted-foreground">
                           <span id="payload-indicator">Calculating size...</span>
@@ -1145,7 +1452,10 @@ function AdminDashboard({
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setIsJobDialogOpen(false)}
+                            onClick={() => {
+                              setIsJobDialogOpen(false);
+                              resetBatchMode();
+                            }}
                           >
                             Cancel
                           </Button>
@@ -1153,18 +1463,19 @@ function AdminDashboard({
                             type="submit"
                             disabled={
                               createJobMutation.isPending ||
-                              updateJobMutation.isPending
+                              updateJobMutation.isPending ||
+                              createBatchJobsMutation.isPending
                             }
                             className="min-w-[120px]"
                           >
-                            {(createJobMutation.isPending || updateJobMutation.isPending) ? (
+                            {(createJobMutation.isPending || updateJobMutation.isPending || createBatchJobsMutation.isPending) ? (
                               <>
                                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                                {editingJob ? "Updating..." : "Creating..."}
+                                {editingJob ? "Updating..." : (isBatchMode ? "Creating..." : "Creating...")}
                               </>
                             ) : (
                               <>
-                                {editingJob ? "Update" : "Create"} Job
+                                {editingJob ? "Update" : (isBatchMode ? "Create Jobs" : "Create Job")}
                               </>
                             )}
                           </Button>

@@ -56,22 +56,14 @@ export async function fetchJobs(params?: {
     }
 
     if (params?.offset) {
-      query = query.range(
-        params.offset,
-        params.offset + (params.limit || 10) - 1
-      );
+      query = query.offset(params.offset);
     }
 
     const { data, error } = await query;
 
     if (error) {
-      console.error("Supabase Query Error in fetchJobs:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-      });
-      return { data: [], error };
+      console.error("Error fetching jobs:", error);
+      throw error;
     }
 
     const jobs = data || [];
@@ -89,6 +81,27 @@ export async function fetchJobBySlug(slug: string) {
     .select("*, companies(*), categories(*)")
     .eq("slug", slug)
     .single();
+}
+
+// Fetch jobs from the same batch
+export async function fetchBatchJobs(batchId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("*, companies(*), categories(*)")
+      .eq("batch_id", batchId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching batch jobs:", error);
+      throw error;
+    }
+
+    return { data: data || [], error: null };
+  } catch (error) {
+    console.error("Error in fetchBatchJobs:", error);
+    return { data: [], error: error as Error };
+  }
 }
 
 // ── Category queries ────────────────────────────────────────────────────────

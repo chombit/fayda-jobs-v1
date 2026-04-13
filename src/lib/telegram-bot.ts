@@ -47,29 +47,45 @@ function stripHtml(html: string): string {
 export function formatJobPostForTelegram(job: TelegramJobPost): string {
   const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
   
-  // Create engaging message with icons and better formatting
-  let message = `                           🚨 *NEW JOB OPPORTUNITY* 🚨                                         \n\n`;
+  // Check if this position is for fresh graduates
+  const isFreshGraduate = 
+    job.title.toLowerCase().includes('fresh graduate') ||
+    job.title.toLowerCase().includes('fresh graduate') ||
+    job.title.toLowerCase().includes('graduate') ||
+    job.title.toLowerCase().includes('intern') ||
+    job.title.toLowerCase().includes('internship') ||
+    job.title.toLowerCase().includes('trainee') ||
+    job.title.toLowerCase().includes('entry level') ||
+    (job.requirements && job.requirements.toLowerCase().includes('fresh graduate')) ||
+    (job.requirements && job.requirements.toLowerCase().includes('fresh graduate'));
   
-  // Company information first (above title)
-  if (job.company_name) {
-    message += `📋 *Company : ${job.company_name}*\n`;
+  // Determine header based on fresh graduates detection
+  const headerText = isFreshGraduate ? "🚨 *NEW JOB OPPORTUNITY* 🚨Fresh  Graduates (በ0 አመት)" : "🚨 *NEW JOB OPPORTUNITY* 🚨(በ0 አመት)";
+  
+  // Create message in the exact format specified by user with bold text
+  let message = `${headerText}\n\n`;
+  
+  message += `📋 *Company :* ${job.company_name || 'Unknown Company'}\n`;
+  message += `💼 *Position :* ${job.title}\n`;
+  
+  // Add requirements if available
+  if (job.requirements && job.requirements.trim()) {
+    const cleanRequirements = stripHtml(job.requirements);
+    const shortRequirements = cleanRequirements.length > 150 
+      ? cleanRequirements.substring(0, 150) + '...' 
+      : cleanRequirements;
+    message += `📂 *Requirement :*${shortRequirements}\n`;
   }
   
-  message += `💼 *Position : ${job.title}*\n`;
-  
-  if (job.requirements) {
-    message += `📂 *Requirement : ${stripHtml(job.requirements)}*\n`;
-  }
-  
+  // Add deadline if available
   if (job.deadline) {
-    message += `📅 *Deadline : ${job.deadline}*\n`;
+    message += `📅 *Deadline :* ${job.deadline}\n`;
   }
   
-  message += `\n\n*👇 Apply Now* 👇\n\n`;
+  message += `\n👇 *Apply Now* 👇\n\n`;
   message += `▪️ *Find More Details here*\n`;
-  message += `*🗝️ ${jobUrl}*\n\n`;
-  message += `📱 *More jobs: ${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/*\n`;
-  message += `🌐 *Join @faydajobs for more opportunities!*`;
+  message += `🗝 ${jobUrl}\n\n`;
+  message += `📱 *Visit Website:* https://faydajobs.com/`;
   
   return message;
 }
@@ -113,43 +129,19 @@ export async function postJobToTelegram(job: TelegramJobPost): Promise<boolean> 
   }
 }
 
-// Helper function to send photo with company logo and buttons
+// Helper function to send photo with company logo
 async function sendPhotoWithLogo(job: TelegramJobPost, message: string): Promise<boolean> {
   const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendPhoto`;
-  const jobUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://faydajobs.com'}/jobs/${job.slug}`;
-  const publicJobUrl = `https://faydajobs.com/jobs/${job.slug}`;
-  
-  // Create inline keyboard with buttons
-  const inlineKeyboard = {
-    inline_keyboard: [
-      [
-        {
-          text: "🚀 Apply Now",
-          url: publicJobUrl
-        }
-      ],
-      [
-        {
-          text: "🌐 More Jobs",
-          url: "https://faydajobs.com"
-        },
-        {
-          text: "📱 Visit Website",
-          url: "https://faydajobs.com"
-        }
-      ]
-    ]
-  };
   
   const payload = {
     chat_id: TELEGRAM_CONFIG.channelId,
     photo: job.company_logo,
     caption: message,
     parse_mode: 'Markdown',
-    reply_markup: inlineKeyboard
+    disable_web_page_preview: false
   };
   
-  console.log('📸 Sending photo with company logo and buttons:', JSON.stringify(payload, null, 2));
+  console.log('📸 Sending photo with company logo:', JSON.stringify(payload, null, 2));
   
   const response = await fetch(telegramApiUrl, {
     method: 'POST',
@@ -160,19 +152,19 @@ async function sendPhotoWithLogo(job: TelegramJobPost, message: string): Promise
   });
   
   const result = await response.json();
-  console.log('📊 Photo response with buttons:', result);
+  console.log('📊 Photo response:', result);
   
   if (result.ok) {
-    console.log('✅ Photo with buttons sent successfully!');
+    console.log('✅ Photo sent successfully!');
     return true;
   } else {
     console.error('❌ Telegram photo post failed:', result.description);
-    // Fallback to text message with buttons if photo fails
-    return await sendTextMessage(message, jobUrl);
+    // Fallback to text message if photo fails
+    return await sendTextMessage(message, job.slug);
   }
 }
 
-// Helper function to send text message with inline buttons
+// Helper function to send text message with links
 async function sendTextMessage(message: string, jobUrl: string): Promise<boolean> {
   const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_CONFIG.botToken}/sendMessage`;
   
@@ -194,10 +186,6 @@ async function sendTextMessage(message: string, jobUrl: string): Promise<boolean
           }
         ],
         [
-          {
-            text: "🌐 More Jobs",
-            url: "https://faydajobs.com"
-          },
           {
             text: "📱 Visit Website", 
             url: "https://faydajobs.com"
